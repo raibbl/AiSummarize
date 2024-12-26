@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">AiSummarize</string>
+    <string name="my_default_tile_label">Summarize</string>
+</resources>
