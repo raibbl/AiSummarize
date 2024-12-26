@@ -1,6 +1,8 @@
 package com.example.aisummarize
 
 import android.app.Activity
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -11,12 +13,26 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.PopupWindow
+import android.widget.TextView
 import android.widget.Toast
+import androidx.core.app.NotificationCompat
 import com.example.aisummarize.services.MediaProjectionService
+import com.google.firebase.Firebase
+import com.google.firebase.vertexai.FirebaseVertexAI
+import com.google.firebase.vertexai.GenerativeModel
+import com.google.firebase.vertexai.vertexAI
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 
 class ScreenCaptureActivity : Activity() {
@@ -35,6 +51,7 @@ class ScreenCaptureActivity : Activity() {
         mediaProjectionManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         val captureIntent = mediaProjectionManager.createScreenCaptureIntent()
         startActivityForResult(captureIntent, REQUEST_CODE_CAPTURE)
+        createNotificationChannel()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -151,8 +168,8 @@ class ScreenCaptureActivity : Activity() {
         recognizer.process(image)
             .addOnSuccessListener { visionText ->
                 // Display the recognized text
-                Toast.makeText(this, "Detected text: ${visionText.text}", Toast.LENGTH_LONG).show()
-
+                //Toast.makeText(this, "Detected text: ${visionText.text}", Toast.LENGTH_LONG).show()
+                summarizeTextWithVertexAI(visionText.text)
                 println(visionText.text)
             }
             .addOnFailureListener { e ->
@@ -160,4 +177,76 @@ class ScreenCaptureActivity : Activity() {
                 Toast.makeText(this, "Text recognition failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
+
+    private fun summarizeTextWithVertexAI(inputText: String) {
+        // Initialize the generative model
+        val vertexAI = Firebase.vertexAI
+        val generativeModel = vertexAI.generativeModel("gemini-1.5-flash")
+
+        // Use a coroutine to call Vertex AI
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // Improve the prompt for better summarization
+                val prompt = """
+                The following text is captured from a screen. Please provide a concise and clear summary of the key points:
+                
+                "$inputText"
+            """.trimIndent()
+
+                val response = generativeModel.generateContent(prompt)
+
+                // Handle the summary response on the main thread
+                Handler(Looper.getMainLooper()).post {
+                    response.text?.let {
+                        // Launch SummaryActivity with the AI-generated summary
+                        val intent = Intent(this@ScreenCaptureActivity, SummaryActivity::class.java).apply {
+                            putExtra("EXTRA_SUMMARY", it)
+                        }
+                        startActivity(intent)
+
+                        // Debugging/logging
+                        println("Summary: $it")
+                    }
+                }
+            } catch (e: Exception) {
+                // Handle errors
+                runOnUiThread {
+                    Toast.makeText(this@ScreenCaptureActivity, "Summarization failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "summary_channel",
+                "Summary Notifications",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Displays the AI-generated summary"
+            }
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun showSummaryNotification(summary: String) {
+        createNotificationChannel()
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationBuilder = NotificationCompat.Builder(this, "summary_channel")
+            .setSmallIcon(R.drawable.ic_notification) // Replace with your app's notification icon
+            .setContentTitle("AI Summary")
+            .setContentText(summary)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(summary)) // Expandable text
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setAutoCancel(true)
+
+        // Show the notification
+        notificationManager.notify(1001, notificationBuilder.build())
+    }
+
+
 }
