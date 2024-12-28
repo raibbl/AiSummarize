@@ -21,7 +21,7 @@ fun SummaryList(summaryItems: List<SummaryItem>, modifier: Modifier = Modifier) 
 
 @Preview(showBackground = true)
 @Composable
-fun SummaryListPreview() {
+fun SummaryListPreview(modifier: Modifier=Modifier) {
     val sampleItems = listOf(
         SummaryItem(
             type = "Screenshot", summary = "Breaking news: Compose simplifies UI development.",
@@ -49,6 +49,6 @@ fun SummaryListPreview() {
     )
 
     AiSummarizeTheme {
-        SummaryList(summaryItems = sampleItems)
+        SummaryList(summaryItems = sampleItems, modifier = modifier)
     }
 }
