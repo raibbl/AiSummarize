@@ -20,6 +20,17 @@
         android:theme="@style/Theme.AiSummarize"
         tools:targetApi="31">
         <activity
+            android:name=".LinkSummaryActivity"
+            android:exported="true"
+            android:label="Summarize Link"
+            android:theme="@style/Theme.AiSummarize">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".SummaryActivity"
             android:exported="false" />
         <activity
@@ -36,7 +47,7 @@
         <activity
             android:name=".ScreenCaptureActivity"
             android:exported="true"
-            android:theme="@style/Theme.AiSummarize"></activity>
+            android:theme="@style/Theme.AiSummarize" />
 
         <service
             android:name=".services.QSTileService"
