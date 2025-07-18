@@ -7,7 +7,8 @@ import androidx.room.PrimaryKey
 data class SummaryItem(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val type: String, // "link" or "screenshot"
-    val content: String,
+    val link: String,
     val summary: String,
+    val title: String,
     val timestamp: Long = System.currentTimeMillis()
 )

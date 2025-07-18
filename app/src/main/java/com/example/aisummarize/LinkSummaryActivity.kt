@@ -4,6 +4,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.lifecycleScope
+import com.example.aisummarize.data.db.AppDatabase
+
+import com.example.aisummarize.data.db.SummaryItem
 import com.google.firebase.Firebase
 import com.google.firebase.vertexai.vertexAI
 import kotlinx.coroutines.CoroutineScope
@@ -11,7 +15,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class LinkSummaryActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -40,31 +43,53 @@ class LinkSummaryActivity : ComponentActivity() {
         // Use a coroutine to call Vertex AI
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val prompt = "Summarize the content of the following URL: $link"
-                val response = generativeModel.generateContent(prompt)
+                val promptForSummary = "Summarize the content of the following URL: $link"
+                val promptForSummaryTitle =
+                    "Return exactly one short, 3 to 5 word title summarizing the page at this URL: $link. Do not include any explanations or multiple options. Only return the title as plain text."
+                val summaryResponse = generativeModel.generateContent(promptForSummary)
+                val summaryTitle = generativeModel.generateContent(promptForSummaryTitle)
 
                 // Handle the summary response on the main thread
                 runOnUiThread {
-                    if (response.text != null) {
-                        startSummaryActivity(response.text!!)
+                    if (summaryResponse.text != null) {
+                        saveSummaryAndLaunchUI(summaryResponse.text!!, link, summaryTitle.text!!)
                     } else {
-                        Toast.makeText(this@LinkSummaryActivity, "Failed to generate summary", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this@LinkSummaryActivity,
+                            "Failed to generate summary",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
             } catch (e: Exception) {
                 runOnUiThread {
-                    Toast.makeText(this@LinkSummaryActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@LinkSummaryActivity,
+                        "Error: ${e.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         }
     }
 
-    private fun startSummaryActivity(summary: String) {
-        // Start SummaryActivity with the generated summary
-        val intent = Intent(this, SummaryActivity::class.java).apply {
-            putExtra("EXTRA_SUMMARY", summary)
+    private fun saveSummaryAndLaunchUI(summary: String, link: String, title: String) {
+        lifecycleScope.launch {
+            val db = AppDatabase.getDatabase(this@LinkSummaryActivity)
+            val summaryDao = db.summaryDao()
+            val summaryItem = SummaryItem(
+                type = "link",
+                link = link,
+                title = title,
+                summary = summary
+            )
+            summaryDao.insertSummary(summaryItem)
+
+            val intent = Intent(this@LinkSummaryActivity, SummaryActivity::class.java).apply {
+                putExtra("EXTRA_SUMMARY", summary)
+            }
+            startActivity(intent)
+            finish()
         }
-        startActivity(intent)
-        finish() // Close the current activity
     }
 }

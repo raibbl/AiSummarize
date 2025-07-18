@@ -26,7 +26,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             AiSummarizeTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    SummaryListPreview(
+                    SummaryListFromDb(
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
