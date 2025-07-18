@@ -1,6 +1,7 @@
 package com.example.aisummarize
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -11,18 +12,41 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
+import com.example.aisummarize.data.db.AppDatabase
+import com.example.aisummarize.data.db.SummaryItem
 import com.example.aisummarize.ui.theme.AiSummarizeTheme
+import kotlinx.coroutines.launch
 
 class SummaryActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val summary = intent.getStringExtra("EXTRA_SUMMARY") ?: "No summary available"
+        val summaryId = intent.getIntExtra("EXTRA_SUMMARY_ID", -1)
 
-        setContent {
-            AiSummarizeTheme {
-                SummaryScreen(summary)
+        if (summaryId == -1) {
+            Toast.makeText(this, "Invalid summary ID", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        lifecycleScope.launch {
+            val db = AppDatabase.getDatabase(this@SummaryActivity)
+            val summaryItem = db.summaryDao().getSummaryById(summaryId)
+
+            if (summaryItem == null) {
+                Toast.makeText(this@SummaryActivity, "Summary not found for $summaryId", Toast.LENGTH_SHORT).show()
+                finish()
+                return@launch
+            }
+
+            setContent {
+                AiSummarizeTheme {
+                    SummaryScreen(
+                        summaryItem
+                    )
+                }
             }
         }
     }
@@ -30,10 +54,10 @@ class SummaryActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SummaryScreen(summary: String) {
+fun SummaryScreen(summaryItem: SummaryItem) {
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("AI Summary") })
+            TopAppBar(title = { Text(summaryItem.title) })
         }
     ) { innerPadding ->
         Column(
@@ -45,7 +69,7 @@ fun SummaryScreen(summary: String) {
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = summary,
+                text = summaryItem.summary,
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(8.dp)

@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -19,8 +21,8 @@ import models.SummaryViewModelFactory
 
 @Composable
 fun SummaryList(summaryItems: List<SummaryItem>, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.padding(8.dp)) {
-        summaryItems.forEach { summaryItem ->
+    LazyColumn(modifier = modifier.padding(8.dp)) {
+        items(summaryItems) { summaryItem ->
             SummaryUiItem(summaryItem = summaryItem, modifier = Modifier.fillMaxWidth())
         }
     }

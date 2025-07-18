@@ -43,7 +43,11 @@ class LinkSummaryActivity : ComponentActivity() {
         // Use a coroutine to call Vertex AI
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val promptForSummary = "Summarize the content of the following URL: $link"
+                val promptForSummary = """
+    Read and analyze the full content at the following URL: $link. 
+    Then write a clear and concise summary that captures the main points, key insights, and overall message of the article. 
+    Keep the tone neutral and informative, avoid opinions or filler phrases, and aim for 4–6 sentences.
+""".trimIndent()
                 val promptForSummaryTitle =
                     "Return exactly one short, 3 to 5 word title summarizing the page at this URL: $link. Do not include any explanations or multiple options. Only return the title as plain text."
                 val summaryResponse = generativeModel.generateContent(promptForSummary)
@@ -83,10 +87,9 @@ class LinkSummaryActivity : ComponentActivity() {
                 title = title,
                 summary = summary
             )
-            summaryDao.insertSummary(summaryItem)
-
+            val id = summaryDao.insertSummary(summaryItem).toInt()
             val intent = Intent(this@LinkSummaryActivity, SummaryActivity::class.java).apply {
-                putExtra("EXTRA_SUMMARY", summary)
+                putExtra("EXTRA_SUMMARY_ID", id)
             }
             startActivity(intent)
             finish()
