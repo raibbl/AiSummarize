@@ -4,10 +4,12 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.lifecycle.lifecycleScope
 import com.example.aisummarize.data.db.AppDatabase
 
 import com.example.aisummarize.data.db.SummaryItem
+import com.example.aisummarize.ui.theme.AiSummarizeTheme
 import com.google.firebase.Firebase
 import com.google.firebase.vertexai.vertexAI
 import kotlinx.coroutines.CoroutineScope
@@ -18,9 +20,15 @@ class LinkSummaryActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Handle the shared intent
+        setContent {
+            AiSummarizeTheme {
+                SummarizeLoadingScreen()
+            }
+        }
+
         handleShareIntent()
     }
+
 
     private fun handleShareIntent() {
         val intent = intent
@@ -36,47 +44,73 @@ class LinkSummaryActivity : ComponentActivity() {
     }
 
     private fun generateSummaryForLink(link: String) {
-        // Initialize the Vertex AI model
         val vertexAI = Firebase.vertexAI
         val generativeModel = vertexAI.generativeModel("gemini-1.5-flash")
 
-        // Use a coroutine to call Vertex AI
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val promptForSummary = """
-    Read and analyze the full content at the following URL: $link. 
-    Write a clear and concise summary in 1–2 short paragraphs that highlight the main points, key takeaways, and any important conclusions from the article. 
-    Keep the tone neutral and informative, avoid filler or opinions, and ensure the summary is easy to read at a glance.
-""".trimIndent()
-                val promptForSummaryTitle =
-                    "Return exactly one short, 3 to 5 word title summarizing the page at this URL: $link. Do not include any explanations or multiple options. Only return the title as plain text."
-                val summaryResponse = generativeModel.generateContent(promptForSummary)
-                val summaryTitle = generativeModel.generateContent(promptForSummaryTitle)
+                // Try fetching article text from HTML
+                val articleText = try {
+                    val document = org.jsoup.Jsoup.connect(link).get()
+                    document.select("article").text().ifEmpty {
+                        document.body().text()
+                    }
+                } catch (e: Exception) {
+                    "" // CAPTCHA, timeout, etc.
+                }
 
-                // Handle the summary response on the main thread
+                val fallbackToUrlPrompt = articleText.length < 200
+
+                val summaryResponse = if (fallbackToUrlPrompt) {
+                    generativeModel.generateContent(
+                        """
+                    Read and analyze the full content at the following URL: $link. 
+                    Write a concise summary in 1–2 short paragraphs highlighting the main ideas.
+                    """.trimIndent()
+                    )
+                } else {
+                    generativeModel.generateContent(
+                        """
+                    Summarize the following article in 1–2 paragraphs, clearly stating the main ideas:
+                    
+                    $articleText
+                    """.trimIndent()
+                    )
+                }
+
+                val summaryTitle = generativeModel.generateContent(
+                    if (fallbackToUrlPrompt)
+                        """
+        You are an assistant that returns only one result with no explanation.
+        Return exactly one concise, 3 to 5 word title summarizing the content at this URL: $link
+        
+        Do not include explanations, quotes, or multiple options. Only return the title text.
+        """.trimIndent()
+                    else
+                        """
+        You are an assistant that returns only one result with no explanation.
+        Return exactly one concise, 3 to 5 word title summarizing the following article:
+
+        $articleText
+
+        Do not include explanations, quotes, or multiple options. Only return the title text.
+        """.trimIndent()
+                )
+
                 runOnUiThread {
-                    if (summaryResponse.text != null) {
-                        saveSummaryAndLaunchUI(summaryResponse.text!!, link, summaryTitle.text!!)
+                    if (!summaryResponse.text.isNullOrBlank()) {
+                        saveSummaryAndLaunchUI(summaryResponse.text!!, link, summaryTitle.text ?: "Untitled")
                     } else {
-                        Toast.makeText(
-                            this@LinkSummaryActivity,
-                            "Failed to generate summary",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(this@LinkSummaryActivity, "Failed to generate summary", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
                 runOnUiThread {
-                    Toast.makeText(
-                        this@LinkSummaryActivity,
-                        "Error: ${e.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this@LinkSummaryActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
-
     private fun saveSummaryAndLaunchUI(summary: String, link: String, title: String) {
         lifecycleScope.launch {
             val db = AppDatabase.getDatabase(this@LinkSummaryActivity)
