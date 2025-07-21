@@ -32,8 +32,11 @@ import models.SummaryViewModelFactory
 @Composable
 fun SummaryList(summaryItems: List<SummaryItem>, modifier: Modifier = Modifier) {
     LazyColumn(modifier = modifier.padding(8.dp)) {
-        items(summaryItems) { summaryItem ->
-            SummaryUiItem(summaryItem = summaryItem, modifier = Modifier.fillMaxWidth())
+        items(summaryItems, key = { it.id }) { summaryItem ->
+            SummaryUiItem(
+                summaryItem = summaryItem,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

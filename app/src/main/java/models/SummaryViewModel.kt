@@ -5,11 +5,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
 import com.example.aisummarize.data.db.AppDatabase
 import com.example.aisummarize.data.db.SummaryItem
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.launch
 
 class SummaryViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = AppDatabase.getDatabase(application).summaryDao()
@@ -22,5 +24,12 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
 
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
+    }
+
+
+    fun deleteById(id: Int) {
+        viewModelScope.launch {
+            dao.deleteSummaryById(id)
+        }
     }
 }
