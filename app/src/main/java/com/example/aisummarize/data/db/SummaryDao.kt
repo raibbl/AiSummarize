@@ -15,6 +15,10 @@ interface SummaryDao {
     @Query("SELECT * FROM summaries ORDER BY timestamp DESC")
     fun getAllSummaries(): LiveData<List<SummaryItem>>
 
+    @Query("SELECT * FROM summaries WHERE summary LIKE '%' || :query || '%' OR title LIKE '%' || :query || '%' OR link LIKE '%' || :query || '%' ORDER BY timestamp DESC")
+    fun searchSummaries(query: String): LiveData<List<SummaryItem>>
+
+
     // Fetch a single summary by ID
     @Query("SELECT * FROM summaries WHERE id = :id")
     suspend fun getSummaryById(id: Int): SummaryItem?

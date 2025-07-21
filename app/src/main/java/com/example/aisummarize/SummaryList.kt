@@ -6,9 +6,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,11 +43,42 @@ fun SummaryListFromDb(modifier: Modifier=Modifier) {
     val application = LocalContext.current.applicationContext as Application
     val factory = SummaryViewModelFactory(application)
     val viewModel: SummaryViewModel = viewModel(factory = factory)
-
+    var searchText by remember { mutableStateOf("") }
     val summaryItems by viewModel.summaries.observeAsState(emptyList())
 
-    AiSummarizeTheme {
-        SummaryList(summaryItems = summaryItems, modifier = modifier)
+
+    Column(modifier = modifier.padding(8.dp)) {
+        // 🔍 Search Bar
+        OutlinedTextField(
+            value = searchText,
+            onValueChange = {
+                searchText = it
+                viewModel.updateSearchQuery(it)
+            },
+            label = { Text("Search summaries...") },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search Icon"
+                )
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            shape = MaterialTheme.shapes.large,
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                focusedLabelColor = MaterialTheme.colorScheme.primary
+            ),
+            singleLine = true
+        )
+
+        // 📝 Filtered List
+        SummaryList(summaryItems = summaryItems)
     }
 
 }

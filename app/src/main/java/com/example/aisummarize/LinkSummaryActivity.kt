@@ -45,8 +45,8 @@ class LinkSummaryActivity : ComponentActivity() {
             try {
                 val promptForSummary = """
     Read and analyze the full content at the following URL: $link. 
-    Then write a clear and concise summary that captures the main points, key insights, and overall message of the article. 
-    Keep the tone neutral and informative, avoid opinions or filler phrases, and aim for 4–6 sentences.
+    Write a clear and concise summary in 1–2 short paragraphs that highlight the main points, key takeaways, and any important conclusions from the article. 
+    Keep the tone neutral and informative, avoid filler or opinions, and ensure the summary is easy to read at a glance.
 """.trimIndent()
                 val promptForSummaryTitle =
                     "Return exactly one short, 3 to 5 word title summarizing the page at this URL: $link. Do not include any explanations or multiple options. Only return the title as plain text."
