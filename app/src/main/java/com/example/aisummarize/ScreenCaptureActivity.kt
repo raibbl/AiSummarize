@@ -16,7 +16,8 @@ import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.example.aisummarize.services.MediaProjectionService
 import com.google.firebase.Firebase
-import com.google.firebase.vertexai.vertexAI
+import com.google.firebase.ai.ai
+import com.google.firebase.ai.type.GenerativeBackend
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -170,8 +171,8 @@ class ScreenCaptureActivity : Activity() {
 
     private fun summarizeTextWithVertexAI(inputText: String) {
         // Initialize the generative model
-        val vertexAI = Firebase.vertexAI
-        val generativeModel = vertexAI.generativeModel("gemini-1.5-flash")
+        val ai = Firebase.ai(backend = GenerativeBackend.googleAI())
+        val generativeModel = ai.generativeModel("gemini-2.5-flash-lite")
 
         // Use a coroutine to call Vertex AI
         CoroutineScope(Dispatchers.IO).launch {

@@ -1,7 +1,6 @@
 [versions]
 agp = "8.6.0"
-firebaseBom = "33.7.0"
-firebaseVertexai = "16.0.2"
+firebaseBom = "34.7.0"
 jsoup = "1.17.2"
 kotlin = "1.9.23"
 coreKtx = "1.13.1"
@@ -32,8 +31,7 @@ androidx-material = { module = "androidx.compose.material:material", version.ref
 androidx-room-compiler-v252 = { module = "androidx.room:room-compiler", version.ref = "roomCompiler" }
 androidx-room-runtime-v252 = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
-firebase-vertexai = { module = "com.google.firebase:firebase-vertexai" }
-google-firebase-vertexai = { module = "com.google.firebase:firebase-vertexai", version.ref = "firebaseVertexai" }
+firebase-ai = { module = "com.google.firebase:firebase-ai" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }

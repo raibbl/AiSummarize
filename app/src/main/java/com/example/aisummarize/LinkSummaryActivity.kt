@@ -2,6 +2,7 @@ package com.example.aisummarize
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,7 +12,8 @@ import com.example.aisummarize.data.db.AppDatabase
 import com.example.aisummarize.data.db.SummaryItem
 import com.example.aisummarize.ui.theme.AiSummarizeTheme
 import com.google.firebase.Firebase
-import com.google.firebase.vertexai.vertexAI
+import com.google.firebase.ai.ai
+import com.google.firebase.ai.type.GenerativeBackend
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -44,8 +46,8 @@ class LinkSummaryActivity : ComponentActivity() {
     }
 
     private fun generateSummaryForLink(link: String) {
-        val vertexAI = Firebase.vertexAI
-        val generativeModel = vertexAI.generativeModel("gemini-1.5-flash")
+        val ai = Firebase.ai(backend = GenerativeBackend.googleAI())
+        val generativeModel = ai.generativeModel("gemini-2.5-flash-lite")
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -105,8 +107,9 @@ class LinkSummaryActivity : ComponentActivity() {
                     }
                 }
             } catch (e: Exception) {
+                Log.e("failed to summarize using AI","",e)
                 runOnUiThread {
-                    Toast.makeText(this@LinkSummaryActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@LinkSummaryActivity, "There was an issue getting your summary, please try again later.", Toast.LENGTH_SHORT).show()
                 }
             }
         }

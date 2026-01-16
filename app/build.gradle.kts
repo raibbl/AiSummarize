@@ -67,7 +67,7 @@ dependencies {
     implementation(libs.play.services.mlkit.text.recognition.common)
     implementation(libs.play.services.mlkit.text.recognition)
     implementation(platform(libs.firebase.bom))
-    implementation (libs.google.firebase.vertexai)
+    implementation(libs.firebase.ai)
     implementation(libs.jsoup)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
