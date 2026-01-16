@@ -32,4 +32,19 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
             dao.deleteSummaryById(id)
         }
     }
+
+    fun insertOnboardingIfEmpty() {
+        viewModelScope.launch {
+            if (dao.getSummaryCount() == 0) {
+                dao.insertSummary(
+                    SummaryItem(
+                        type = "Info",
+                        link = "",
+                        title = "How to use AiSummarize",
+                        summary = "To get started, open an article in your browser, tap Share, and choose AiSummarize. You can also add the AiSummarize Quick Settings tile to capture your screen and summarize on-screen text."
+                    )
+                )
+            }
+        }
+    }
 }

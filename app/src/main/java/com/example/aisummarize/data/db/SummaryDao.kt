@@ -30,4 +30,8 @@ interface SummaryDao {
     // Delete all summaries
     @Query("DELETE FROM summaries")
     suspend fun deleteAllSummaries()
+
+    // Count summaries (used to seed an onboarding item once)
+    @Query("SELECT COUNT(*) FROM summaries")
+    suspend fun getSummaryCount(): Int
 }
