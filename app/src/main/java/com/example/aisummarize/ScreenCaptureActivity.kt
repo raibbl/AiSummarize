@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
@@ -15,6 +16,8 @@ import android.os.Looper
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.example.aisummarize.services.MediaProjectionService
+import com.example.aisummarize.data.db.AppDatabase
+import com.example.aisummarize.data.db.SummaryItem
 import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
 import com.google.firebase.ai.type.GenerativeBackend
@@ -24,6 +27,8 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
 
 
 class ScreenCaptureActivity : Activity() {
@@ -32,6 +37,7 @@ class ScreenCaptureActivity : Activity() {
     private var mediaProjection: MediaProjection? = null
     private var projectionResult: Intent? = null
     private var projectionResultCode: Int = 0
+    private var lastScreenshotPath: String? = null
 
     companion object {
         const val REQUEST_CODE_CAPTURE = 1001
@@ -120,6 +126,8 @@ class ScreenCaptureActivity : Activity() {
                 image.close()
 
                 bitmap?.let {
+                    // Save bitmap so we can show it later in the screenshot summary screen
+                    lastScreenshotPath = saveBitmapToFile(it)
                     analyzeTextWithMLKit(it)
                 } ?: run {
                     Toast.makeText(this, "Failed to capture screen.", Toast.LENGTH_SHORT).show()
@@ -131,6 +139,18 @@ class ScreenCaptureActivity : Activity() {
             imageReader.close()
             mediaProjection?.stop()
         }, 300)
+    }
+
+    private fun saveBitmapToFile(bitmap: Bitmap): String? {
+        return try {
+            val file = File(cacheDir, "screenshot_${System.currentTimeMillis()}.png")
+            FileOutputStream(file).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+            file.absolutePath
+        } catch (e: Exception) {
+            null
+        }
     }
 
     private fun imageToBitmap(image: android.media.Image): Bitmap? {
@@ -174,29 +194,45 @@ class ScreenCaptureActivity : Activity() {
         val ai = Firebase.ai(backend = GenerativeBackend.googleAI())
         val generativeModel = ai.generativeModel("gemini-2.5-flash-lite")
 
-        // Use a coroutine to call Vertex AI
+        // Use a coroutine to call Gemini and then persist the result
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // Improve the prompt for better summarization
                 val prompt = """
                 The following text is captured from a screen. Please provide a concise and clear summary of the key points:
-                
+
                 "$inputText"
             """.trimIndent()
 
                 val response = generativeModel.generateContent(prompt)
+                val summaryText = response.text
 
-                // Handle the summary response on the main thread
-                Handler(Looper.getMainLooper()).post {
-                    response.text?.let {
-                        // Launch SummaryActivity with the AI-generated summary
-                        val intent = Intent(this@ScreenCaptureActivity, SummaryActivity::class.java).apply {
-                            putExtra("EXTRA_SUMMARY", it)
+                if (!summaryText.isNullOrBlank()) {
+                    // Save summary in Room so it behaves like link-based summaries
+                    val db = AppDatabase.getDatabase(this@ScreenCaptureActivity)
+                    val summaryDao = db.summaryDao()
+                    val summaryItem = SummaryItem(
+                        type = "screenshot",
+                        link = null,
+                        title = "Screenshot summary",
+                        summary = summaryText,
+                        imagePath = lastScreenshotPath
+                    )
+                    val id = summaryDao.insertSummary(summaryItem).toInt()
+
+                    // Launch screenshot-specific summary screen with image + text
+                    Handler(Looper.getMainLooper()).post {
+                        val intent = Intent(this@ScreenCaptureActivity, ScreenshotSummaryActivity::class.java).apply {
+                            putExtra("EXTRA_SUMMARY", summaryText)
+                            putExtra("EXTRA_SCREENSHOT_PATH", lastScreenshotPath)
                         }
+                        println("Launching ScreenshotSummaryActivity for screenshot summary id=$id, path=$lastScreenshotPath")
                         startActivity(intent)
-
-                        // Debugging/logging
-                        println("Summary: $it")
+                        println("Summary: $summaryText")
+                        finish()
+                    }
+                } else {
+                    Handler(Looper.getMainLooper()).post {
+                        Toast.makeText(this@ScreenCaptureActivity, "Summarization failed: empty response", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {

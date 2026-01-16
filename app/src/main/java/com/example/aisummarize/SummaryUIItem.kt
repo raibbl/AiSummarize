@@ -3,6 +3,7 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,6 +21,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,8 +36,10 @@ import com.example.aisummarize.data.db.SummaryItem
 import com.example.aisummarize.ui.theme.AiSummarizeTheme
 import models.SummaryViewModel
 import models.SummaryViewModelFactory
+import androidx.core.content.FileProvider
 import java.text.SimpleDateFormat
 import java.util.*
+import java.io.File
 @OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SummaryUiItem(summaryItem: SummaryItem, modifier: Modifier = Modifier) {
@@ -112,7 +116,7 @@ fun SummaryUiItem(summaryItem: SummaryItem, modifier: Modifier = Modifier) {
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
 
-                    if (expanded) {
+                    if (expanded && !summaryItem.link.isNullOrBlank()) {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
@@ -128,6 +132,32 @@ fun SummaryUiItem(summaryItem: SummaryItem, modifier: Modifier = Modifier) {
                                     context.startActivity(intent)
                                 }
                         )
+                    }
+
+                    if (expanded && summaryItem.type.equals("screenshot", ignoreCase = true) && !summaryItem.imagePath.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextButton(
+                            onClick = {
+                                val path = summaryItem.imagePath
+                                val file = if (path != null) File(path) else null
+                                if (file != null && file.exists()) {
+                                    val uri = FileProvider.getUriForFile(
+                                        context,
+                                        context.packageName + ".fileprovider",
+                                        file
+                                    )
+                                    val viewIntent = Intent(Intent.ACTION_VIEW).apply {
+                                        setDataAndType(uri, "image/*")
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    context.startActivity(viewIntent)
+                                } else {
+                                    Toast.makeText(context, "Screenshot file not found", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        ) {
+                            Text("View screenshot")
+                        }
                     }
                 }
             }
@@ -152,10 +182,12 @@ fun rememberFormattedTimestamp(timestamp: Long): String {
 fun SummaryUiItemPreview() {
     AiSummarizeTheme {
         SummaryUiItem(summaryItem = SummaryItem(
-            id = 1, summary = "some summary",
+            id = 1,
+            summary = "some summary",
             type = "Screenshot",
-            link = "content captured",
+            link = null,
             title = "someTitle",
+            imagePath = null,
             timestamp = System.currentTimeMillis()
         ))
     }

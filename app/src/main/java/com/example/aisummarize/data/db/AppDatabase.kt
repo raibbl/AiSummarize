@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [SummaryItem::class], version = 2)
+@Database(entities = [SummaryItem::class], version = 4)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun summaryDao(): SummaryDao
 
