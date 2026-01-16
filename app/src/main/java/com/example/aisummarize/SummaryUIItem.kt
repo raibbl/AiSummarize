@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -102,15 +103,18 @@ fun SummaryUiItem(summaryItem: SummaryItem, modifier: Modifier = Modifier) {
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         }
+                        // Compact share icon always visible on the header row
+                        ShareIconButton(summaryItem = summaryItem)
                         Icon(
                             imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                            contentDescription = if (expanded) "Collapse" else "Expand"
+                            contentDescription = if (expanded) "Collapse" else "Expand",
+                            modifier = Modifier.size(20.dp)
                         )
                     }
 
                     Text(
                         text = summaryItem.summary,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(vertical = 4.dp),
                         maxLines = if (expanded) Int.MAX_VALUE else 3,
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
@@ -159,6 +163,8 @@ fun SummaryUiItem(summaryItem: SummaryItem, modifier: Modifier = Modifier) {
                             Text("View screenshot")
                         }
                     }
+
+                    // Expanded-only actions (currently none)
                 }
             }
         }
@@ -175,6 +181,55 @@ fun rememberFormattedTimestamp(timestamp: Long): String {
 
 
 
+
+// Reusable share bar for a summary (expanded view)
+@Composable
+fun ShareBar(summaryItem: SummaryItem) {
+    val context = LocalContext.current
+    TextButton(
+        onClick = { shareSummary(context, summaryItem) }
+    ) {
+        Icon(
+            imageVector = Icons.Default.Share,
+            contentDescription = "Share"
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text("Share")
+    }
+}
+
+// Compact share icon for header row (non-expanded view)
+@Composable
+fun ShareIconButton(summaryItem: SummaryItem) {
+    val context = LocalContext.current
+    Icon(
+        imageVector = Icons.Default.Share,
+        contentDescription = "Share",
+        modifier = Modifier
+            .size(20.dp)
+            .clickable { shareSummary(context, summaryItem) }
+    )
+}
+
+private fun shareSummary(context: android.content.Context, summaryItem: SummaryItem) {
+    val shareText = buildString {
+        append(summaryItem.title)
+        append("\n\n")
+        append(summaryItem.summary)
+        if (!summaryItem.link.isNullOrBlank()) {
+            append("\n\n")
+            append(summaryItem.link)
+        }
+    }
+    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, summaryItem.title)
+        putExtra(Intent.EXTRA_TEXT, shareText)
+    }
+    context.startActivity(
+        Intent.createChooser(shareIntent, "Share summary")
+    )
+}
 
 // Preview function with a mock SummaryItem
 @Preview(showBackground = true)
