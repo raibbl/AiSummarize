@@ -1,12 +1,14 @@
-package com.example.aisummarize
+package com.raibbl.AiAnalyze
 
 import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.graphics.PixelFormat
+import android.hardware.display.DisplayManager
+import android.media.Image
+import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
@@ -15,9 +17,11 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import com.example.aisummarize.services.MediaProjectionService
-import com.example.aisummarize.data.db.AppDatabase
-import com.example.aisummarize.data.db.SummaryItem
+import com.raibbl.AiAnalyze.ScreenshotSummaryActivity
+import com.raibbl.AiAnalyze.SummaryGeminiService
+import com.raibbl.AiAnalyze.services.MediaProjectionService
+import com.raibbl.AiAnalyze.data.db.AppDatabase
+import com.raibbl.AiAnalyze.data.db.SummaryItem
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -26,6 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
+
 
 
 class ScreenCaptureActivity : Activity() {
@@ -101,8 +106,8 @@ class ScreenCaptureActivity : Activity() {
         val height = metrics.heightPixels
         val density = metrics.densityDpi
 
-        val imageReader = android.media.ImageReader.newInstance(
-            width, height, android.graphics.PixelFormat.RGBA_8888, 2
+        val imageReader = ImageReader.newInstance(
+            width, height, PixelFormat.RGBA_8888, 2
         )
 
         val virtualDisplay = mediaProjection?.createVirtualDisplay(
@@ -110,7 +115,7 @@ class ScreenCaptureActivity : Activity() {
             width,
             height,
             density,
-            android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
             imageReader.surface,
             null,
             null
@@ -150,7 +155,7 @@ class ScreenCaptureActivity : Activity() {
         }
     }
 
-    private fun imageToBitmap(image: android.media.Image): Bitmap? {
+    private fun imageToBitmap(image: Image): Bitmap? {
         val buffer = image.planes[0].buffer
         val pixelStride = image.planes[0].pixelStride
         val rowStride = image.planes[0].rowStride
@@ -234,14 +239,14 @@ class ScreenCaptureActivity : Activity() {
             ).apply {
                 description = "Displays the AI-generated summary"
             }
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
     }
 
     private fun showSummaryNotification(summary: String) {
         createNotificationChannel()
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         val notificationBuilder = NotificationCompat.Builder(this, "summary_channel")
             .setSmallIcon(R.drawable.ic_notification) // Replace with your app's notification icon
             .setContentTitle("AI Summary")

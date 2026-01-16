@@ -1,4 +1,4 @@
-package com.example.aisummarize
+package com.raibbl.AiAnalyze
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Intent
@@ -33,8 +33,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.aisummarize.data.db.SummaryItem
-import com.example.aisummarize.ui.theme.AiSummarizeTheme
+import com.raibbl.AiAnalyze.data.db.SummaryItem
+import com.raibbl.AiAnalyze.ui.theme.AiSummarizeTheme
 import models.SummaryViewModel
 import models.SummaryViewModelFactory
 import androidx.core.content.FileProvider

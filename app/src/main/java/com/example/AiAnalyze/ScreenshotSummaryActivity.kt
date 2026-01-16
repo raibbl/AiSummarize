@@ -1,11 +1,11 @@
-package com.example.aisummarize
+package com.raibbl.AiAnalyze
 
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.example.aisummarize.ui.theme.AiSummarizeTheme
+import com.raibbl.AiAnalyze.ui.theme.AiSummarizeTheme
 
 class ScreenshotSummaryActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

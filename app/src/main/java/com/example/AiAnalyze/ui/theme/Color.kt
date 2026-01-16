@@ -1,4 +1,4 @@
-package com.example.aisummarize.ui.theme
+package com.raibbl.AiAnalyze.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

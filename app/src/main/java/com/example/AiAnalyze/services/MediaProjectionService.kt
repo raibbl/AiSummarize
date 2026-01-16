@@ -1,4 +1,4 @@
-package com.example.aisummarize.services
+package com.raibbl.AiAnalyze.services
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -11,7 +11,7 @@ import android.media.projection.MediaProjection
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import com.example.aisummarize.R
+import com.raibbl.AiAnalyze.R
 
 class MediaProjectionService : Service() {
 

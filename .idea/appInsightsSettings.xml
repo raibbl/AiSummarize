@@ -23,8 +23,8 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="com.example.aisummarize" />
-                  <option name="mobileSdkAppId" value="1:259986257280:android:9185fb3b4efc6ac2c73d65" />
+                  <option name="appId" value="com.raibbl.AiAnalyze" />
+                  <option name="mobileSdkAppId" value="1:259986257280:android:c7411c23b0ec84f3c73d65" />
                   <option name="projectId" value="aianalyze-6fd43" />
                   <option name="projectNumber" value="259986257280" />
                 </ConnectionSetting>

@@ -6,14 +6,14 @@ plugins {
 }
 
 android {
-    namespace = "com.example.aisummarize"
+    namespace = "com.raibbl.AiAnalyze"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.aisummarize"
+        applicationId = "com.raibbl.AiAnalyze"
         minSdk = 24
-        targetSdk = 34
-        versionCode = 1
+        targetSdk = 35
+        versionCode = 4
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

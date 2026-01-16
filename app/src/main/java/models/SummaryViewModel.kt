@@ -6,8 +6,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
-import com.example.aisummarize.data.db.AppDatabase
-import com.example.aisummarize.data.db.SummaryItem
+import com.raibbl.AiAnalyze.data.db.AppDatabase
+import com.raibbl.AiAnalyze.data.db.SummaryItem
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flatMapLatest

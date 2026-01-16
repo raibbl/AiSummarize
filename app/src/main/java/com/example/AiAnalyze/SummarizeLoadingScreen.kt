@@ -1,4 +1,4 @@
-package com.example.aisummarize
+package com.raibbl.AiAnalyze
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -7,7 +7,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.aisummarize.ui.theme.AiSummarizeTheme
+import com.raibbl.AiAnalyze.ui.theme.AiSummarizeTheme
 
 @Composable
 fun SummarizeLoadingScreen() {

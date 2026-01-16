@@ -1,4 +1,4 @@
-package com.example.aisummarize.data.db
+package com.raibbl.AiAnalyze.data.db
 
 import androidx.lifecycle.LiveData
 import androidx.room.*

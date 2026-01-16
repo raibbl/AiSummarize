@@ -1,4 +1,4 @@
-package com.example.aisummarize
+package com.raibbl.AiAnalyze
 
 import org.junit.Test
 

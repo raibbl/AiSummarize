@@ -1,6 +1,5 @@
-package com.example.aisummarize
+package com.raibbl.AiAnalyze
 
-import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -25,14 +24,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
-import com.example.aisummarize.data.db.AppDatabase
-import com.example.aisummarize.data.db.SummaryItem
-import com.example.aisummarize.ui.theme.AiSummarizeTheme
+import com.raibbl.AiAnalyze.data.db.AppDatabase
+import com.raibbl.AiAnalyze.data.db.SummaryItem
+import com.raibbl.AiAnalyze.ui.theme.AiSummarizeTheme
 import kotlinx.coroutines.launch
 import android.graphics.BitmapFactory
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.raibbl.AiAnalyze.MainActivity
 import java.io.File
 
 class SummaryActivity : ComponentActivity() {

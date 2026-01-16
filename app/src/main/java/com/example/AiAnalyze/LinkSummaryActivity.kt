@@ -1,4 +1,4 @@
-package com.example.aisummarize
+package com.raibbl.AiAnalyze
 
 import android.content.Intent
 import android.os.Bundle
@@ -7,9 +7,9 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.lifecycle.lifecycleScope
-import com.example.aisummarize.data.db.AppDatabase
-import com.example.aisummarize.data.db.SummaryItem
-import com.example.aisummarize.ui.theme.AiSummarizeTheme
+import com.raibbl.AiAnalyze.data.db.AppDatabase
+import com.raibbl.AiAnalyze.data.db.SummaryItem
+import com.raibbl.AiAnalyze.ui.theme.AiSummarizeTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

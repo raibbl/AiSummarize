@@ -1,4 +1,4 @@
-package com.example.aisummarize
+package com.raibbl.AiAnalyze
 
 import com.google.firebase.Firebase
 import com.google.firebase.ai.ai

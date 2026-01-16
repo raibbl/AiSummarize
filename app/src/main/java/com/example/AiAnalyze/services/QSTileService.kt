@@ -1,4 +1,4 @@
-package com.example.aisummarize.services
+package com.raibbl.AiAnalyze.services
 
 import android.app.Activity
 import android.app.PendingIntent
@@ -9,7 +9,7 @@ import android.os.Build
 import android.service.quicksettings.TileService
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import com.example.aisummarize.ScreenCaptureActivity
+import com.raibbl.AiAnalyze.ScreenCaptureActivity
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
