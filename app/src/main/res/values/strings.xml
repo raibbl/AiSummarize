@@ -1,6 +1,7 @@
 <resources>
-    <string name="app_name">AiSummarize</string>
+    <string name="app_name">Briefly</string>
     <string name="my_default_tile_label">Summarize</string>
     <string name="title_activity_summary_item">SummaryItem</string>
     <string name="title_activity_summary_list">SummaryList</string>
+    <string name="share_action_summarize">Summarize</string>
 </resources>

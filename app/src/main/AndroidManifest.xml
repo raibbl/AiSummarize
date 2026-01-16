@@ -22,7 +22,7 @@
         <activity
             android:name=".LinkSummaryActivity"
             android:exported="true"
-            android:label="Summarize Link"
+            android:label="@string/share_action_summarize"
             android:theme="@style/Theme.AiSummarize">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
