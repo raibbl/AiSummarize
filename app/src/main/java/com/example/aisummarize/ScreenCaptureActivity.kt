@@ -18,9 +18,6 @@ import androidx.core.app.NotificationCompat
 import com.example.aisummarize.services.MediaProjectionService
 import com.example.aisummarize.data.db.AppDatabase
 import com.example.aisummarize.data.db.SummaryItem
-import com.google.firebase.Firebase
-import com.google.firebase.ai.ai
-import com.google.firebase.ai.type.GenerativeBackend
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -190,50 +187,33 @@ class ScreenCaptureActivity : Activity() {
     }
 
     private fun summarizeTextWithVertexAI(inputText: String) {
-        // Initialize the generative model
-        val ai = Firebase.ai(backend = GenerativeBackend.googleAI())
-        val generativeModel = ai.generativeModel("gemini-2.5-flash-lite")
-
         // Use a coroutine to call Gemini and then persist the result
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val prompt = """
-                The following text is captured from a screen. Please provide a concise and clear summary of the key points:
+                val summaryText = SummaryGeminiService.summarizeScreenText(inputText)
 
-                "$inputText"
-            """.trimIndent()
+                // Save summary in Room so it behaves like link-based summaries
+                val db = AppDatabase.getDatabase(this@ScreenCaptureActivity)
+                val summaryDao = db.summaryDao()
+                val summaryItem = SummaryItem(
+                    type = "screenshot",
+                    link = null,
+                    title = "Screenshot summary",
+                    summary = summaryText,
+                    imagePath = lastScreenshotPath
+                )
+                val id = summaryDao.insertSummary(summaryItem).toInt()
 
-                val response = generativeModel.generateContent(prompt)
-                val summaryText = response.text
-
-                if (!summaryText.isNullOrBlank()) {
-                    // Save summary in Room so it behaves like link-based summaries
-                    val db = AppDatabase.getDatabase(this@ScreenCaptureActivity)
-                    val summaryDao = db.summaryDao()
-                    val summaryItem = SummaryItem(
-                        type = "screenshot",
-                        link = null,
-                        title = "Screenshot summary",
-                        summary = summaryText,
-                        imagePath = lastScreenshotPath
-                    )
-                    val id = summaryDao.insertSummary(summaryItem).toInt()
-
-                    // Launch screenshot-specific summary screen with image + text
-                    Handler(Looper.getMainLooper()).post {
-                        val intent = Intent(this@ScreenCaptureActivity, ScreenshotSummaryActivity::class.java).apply {
-                            putExtra("EXTRA_SUMMARY", summaryText)
-                            putExtra("EXTRA_SCREENSHOT_PATH", lastScreenshotPath)
-                        }
-                        println("Launching ScreenshotSummaryActivity for screenshot summary id=$id, path=$lastScreenshotPath")
-                        startActivity(intent)
-                        println("Summary: $summaryText")
-                        finish()
+                // Launch screenshot-specific summary screen with image + text
+                Handler(Looper.getMainLooper()).post {
+                    val intent = Intent(this@ScreenCaptureActivity, ScreenshotSummaryActivity::class.java).apply {
+                        putExtra("EXTRA_SUMMARY", summaryText)
+                        putExtra("EXTRA_SCREENSHOT_PATH", lastScreenshotPath)
                     }
-                } else {
-                    Handler(Looper.getMainLooper()).post {
-                        Toast.makeText(this@ScreenCaptureActivity, "Summarization failed: empty response", Toast.LENGTH_SHORT).show()
-                    }
+                    println("Launching ScreenshotSummaryActivity for screenshot summary id=$id, path=$lastScreenshotPath")
+                    startActivity(intent)
+                    println("Summary: $summaryText")
+                    finish()
                 }
             } catch (e: Exception) {
                 // Handle errors
