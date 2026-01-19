@@ -1,4 +1,4 @@
-package com.raibbl.AiAnalyze
+package com.raibbl.AiAnalyze.ui.components
 
 import android.app.Application
 import androidx.compose.foundation.layout.Column

@@ -1,4 +1,4 @@
-package com.raibbl.AiAnalyze
+package com.raibbl.AiAnalyze.ui.components
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Intent
@@ -41,6 +41,7 @@ import androidx.core.content.FileProvider
 import java.text.SimpleDateFormat
 import java.util.*
 import java.io.File
+import com.raibbl.AiAnalyze.utils.openSummary
 @OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SummaryUiItem(summaryItem: SummaryItem, modifier: Modifier = Modifier) {
@@ -116,7 +117,7 @@ fun SummaryUiItem(summaryItem: SummaryItem, modifier: Modifier = Modifier) {
                         text = summaryItem.summary,
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(vertical = 4.dp),
-                        maxLines = if (expanded) Int.MAX_VALUE else 3,
+                        maxLines = if (expanded) 6 else 3,
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
 
@@ -163,6 +164,20 @@ fun SummaryUiItem(summaryItem: SummaryItem, modifier: Modifier = Modifier) {
                             Text("View screenshot")
                         }
                     }
+
+                    if (expanded) {
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(onClick = { context.openSummary(summaryItem.id) }) {
+                                Text("Read More")
+                            }
+                        }
+                    }
+
 
                     // Expanded-only actions (currently none)
                 }

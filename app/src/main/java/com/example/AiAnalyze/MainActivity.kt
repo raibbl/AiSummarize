@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
-import com.raibbl.AiAnalyze.SummaryListFromDb
+import com.raibbl.AiAnalyze.ui.components.SummaryListFromDb
 import com.raibbl.AiAnalyze.data.db.AppDatabase
 import com.raibbl.AiAnalyze.ui.theme.AiSummarizeTheme
 

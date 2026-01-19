@@ -1,13 +1,17 @@
 package com.raibbl.AiAnalyze.utils
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.raibbl.AiAnalyze.MainActivity
+import com.raibbl.AiAnalyze.SummaryActivity
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+const val EXTRA_SUMMARY_ID = "EXTRA_SUMMARY_ID"
 
 fun Activity.goHomeClearTask() {
     val intent = Intent(this, MainActivity::class.java).apply {
@@ -15,6 +19,13 @@ fun Activity.goHomeClearTask() {
     }
     startActivity(intent)
     finish()
+}
+
+fun Context.openSummary(summaryId: Int) {
+    val intent = Intent(this, SummaryActivity::class.java).apply {
+        putExtra(EXTRA_SUMMARY_ID, summaryId)
+    }
+    startActivity(intent)
 }
 
 fun Activity.showToastAndGoHome(message: String, toastLength: Int = Toast.LENGTH_SHORT) {

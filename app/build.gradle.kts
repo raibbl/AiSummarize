@@ -78,6 +78,8 @@ dependencies {
     implementation(libs.androidx.runtime.livedata)
     kapt ("androidx.room:room-compiler:2.6.1")
     implementation ("androidx.room:room-ktx:2.6.1")
+    // extended icons like FormatSize
+    implementation(libs.androidx.material.icons.extended)
     //noinspection KaptUsageInsteadOfKsp
     kapt(libs.androidx.room.compiler.v252)
     testImplementation(libs.junit)
@@ -87,4 +89,5 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
 }

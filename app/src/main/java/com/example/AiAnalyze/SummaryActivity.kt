@@ -30,18 +30,30 @@ import com.raibbl.AiAnalyze.data.db.SummaryItem
 import com.raibbl.AiAnalyze.ui.theme.AiSummarizeTheme
 import kotlinx.coroutines.launch
 import android.graphics.BitmapFactory
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.FormatSize
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.raibbl.AiAnalyze.utils.goHomeClearTask
 import java.io.File
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.isUnspecified
+import androidx.compose.ui.unit.sp
+import com.raibbl.AiAnalyze.ui.components.ReadingSettings
+import com.raibbl.AiAnalyze.ui.components.ReadingSettingsBottomSheet
+import com.raibbl.AiAnalyze.ui.components.ReadingSettingsSaver
+import com.raibbl.AiAnalyze.utils.EXTRA_SUMMARY_ID
 
 class SummaryActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val summaryId = intent.getIntExtra("EXTRA_SUMMARY_ID", -1)
+        val summaryId = intent.getIntExtra(EXTRA_SUMMARY_ID, -1)
 
         if (summaryId == -1) {
             Toast.makeText(this, "Invalid summary ID", Toast.LENGTH_SHORT).show()
@@ -87,6 +99,32 @@ fun SummaryContent(
     imagePath: String? = null
 ) {
     val currentContext = LocalContext.current
+
+    // Reading sheet state
+    var showReading by rememberSaveable { mutableStateOf(false) }
+    var readingSettings by rememberSaveable(stateSaver = ReadingSettingsSaver) {
+        mutableStateOf(ReadingSettings())
+    }
+    // Derive text style from settings
+    val base = MaterialTheme.typography.bodyLarge
+    val baseFont = if (base.fontSize.isUnspecified) 16.sp else base.fontSize
+    val scaledFont = (baseFont.value * readingSettings.sizePreset.scale).sp
+
+    val baseLine = if (base.lineHeight.isUnspecified) (baseFont.value * 1.4f).sp else base.lineHeight
+    val lineHeight = if (readingSettings.comfortableSpacing)
+        (baseLine.value * 1.25f).sp
+    else
+        baseLine
+
+    val summaryStyle = base.merge(
+        TextStyle(
+            fontSize = scaledFont,
+            lineHeight = lineHeight
+        )
+    )
+
+    val summaryAlign = if (readingSettings.centerText) TextAlign.Center else TextAlign.Start
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -100,9 +138,13 @@ fun SummaryContent(
                     }
                 },
                 actions = {
-                    TextButton(onClick = {
-                        (currentContext as? Activity)?.goHomeClearTask()
-                    }) {
+                    IconButton(onClick = { showReading = true }) {
+                        Icon(
+                            imageVector = Icons.Filled.FormatSize,
+                            contentDescription = "Reading settings"
+                        )
+                    }
+                    TextButton(onClick = { (currentContext as? Activity)?.goHomeClearTask() }) {
                         Text("Go to App", color = MaterialTheme.colorScheme.secondary)
                     }
                 }
@@ -113,11 +155,10 @@ fun SummaryContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Optional screenshot image with toggle button
             val imageBitmap = remember(imagePath) {
                 imagePath?.let {
                     val file = File(it)
@@ -143,16 +184,17 @@ fun SummaryContent(
                             .height(240.dp),
                         contentScale = ContentScale.Fit
                     )
-
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
 
             Text(
                 text = summaryText,
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(8.dp)
+                style = summaryStyle,
+                textAlign = summaryAlign,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
             )
 
             if (!link.isNullOrBlank()) {
@@ -174,5 +216,14 @@ fun SummaryContent(
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+
+    // Render the bottom sheet
+    if (showReading) {
+        ReadingSettingsBottomSheet(
+            settings = readingSettings,
+            onSettingsChange = { readingSettings = it },
+            onDismiss = { showReading = false }
+        )
     }
 }
