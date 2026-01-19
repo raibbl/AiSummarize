@@ -1,5 +1,6 @@
 package com.raibbl.AiAnalyze
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -32,7 +33,7 @@ import android.graphics.BitmapFactory
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.raibbl.AiAnalyze.MainActivity
+import com.raibbl.AiAnalyze.utils.goHomeClearTask
 import java.io.File
 
 class SummaryActivity : ComponentActivity() {
@@ -100,10 +101,7 @@ fun SummaryContent(
                 },
                 actions = {
                     TextButton(onClick = {
-                        val intent = android.content.Intent(currentContext, MainActivity::class.java)
-                        intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                        currentContext.startActivity(intent)
-                        (currentContext as? ComponentActivity)?.finish()
+                        (currentContext as? Activity)?.goHomeClearTask()
                     }) {
                         Text("Go to App", color = MaterialTheme.colorScheme.secondary)
                     }

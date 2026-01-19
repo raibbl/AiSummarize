@@ -1,5 +1,6 @@
 package com.raibbl.AiAnalyze
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -10,6 +11,8 @@ import androidx.lifecycle.lifecycleScope
 import com.raibbl.AiAnalyze.data.db.AppDatabase
 import com.raibbl.AiAnalyze.data.db.SummaryItem
 import com.raibbl.AiAnalyze.ui.theme.AiSummarizeTheme
+import com.raibbl.AiAnalyze.utils.goHomeClearTask
+import com.raibbl.AiAnalyze.utils.showToastAndGoHome
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -35,8 +38,8 @@ class LinkSummaryActivity : ComponentActivity() {
             if (sharedText != null && sharedText.startsWith("http")) {
                 generateSummaryForLink(sharedText)
             } else {
-                Toast.makeText(this, "No valid link shared!", Toast.LENGTH_SHORT).show()
-                finish()
+                showToastAndGoHome("No Valid Link.")
+
             }
         }
     }
@@ -62,13 +65,13 @@ class LinkSummaryActivity : ComponentActivity() {
             } catch (e: Exception) {
                 Log.e("failed to summarize using AI", "", e)
                 runOnUiThread {
-                    Toast.makeText(
-                        this@LinkSummaryActivity,
-                        "There was an issue getting your summary, please try again later.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    showToastAndGoHome("There was an issue getting your summary, please try again later.")
+
+
                 }
+
             }
+
         }
     }
     private fun saveSummaryAndLaunchUI(summary: String, link: String, title: String) {
