@@ -38,6 +38,7 @@ import com.raibbl.AiAnalyze.ui.theme.AiSummarizeTheme
 import models.SummaryViewModel
 import models.SummaryViewModelFactory
 import androidx.core.content.FileProvider
+import com.raibbl.AiAnalyze.utils.buildShareSummaryIntent
 import java.text.SimpleDateFormat
 import java.util.*
 import java.io.File
@@ -227,23 +228,15 @@ fun ShareIconButton(summaryItem: SummaryItem) {
 }
 
 private fun shareSummary(context: android.content.Context, summaryItem: SummaryItem) {
-    val shareText = buildString {
-        append(summaryItem.title)
-        append("\n\n")
-        append(summaryItem.summary)
-        if (!summaryItem.link.isNullOrBlank()) {
-            append("\n\n")
-            append(summaryItem.link)
-        }
-    }
-    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_SUBJECT, summaryItem.title)
-        putExtra(Intent.EXTRA_TEXT, shareText)
-    }
-    context.startActivity(
-        Intent.createChooser(shareIntent, "Share summary")
+    val intent = buildShareSummaryIntent(
+        context = context,
+        title = summaryItem.title,
+        summaryText = summaryItem.summary,
+        link = summaryItem.link,
+        imagePath = summaryItem.imagePath // will attach screenshot if present
     )
+
+    context.startActivity(Intent.createChooser(intent, "Share summary"))
 }
 
 // Preview function with a mock SummaryItem

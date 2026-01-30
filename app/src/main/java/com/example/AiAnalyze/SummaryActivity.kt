@@ -52,6 +52,7 @@ import com.raibbl.AiAnalyze.ui.components.ReadingSettingsSaver
 import com.raibbl.AiAnalyze.ui.components.TextSizePreset
 import com.raibbl.AiAnalyze.utils.EXTRA_SUMMARY_ID
 import androidx.compose.foundation.horizontalScroll
+import com.raibbl.AiAnalyze.utils.buildShareSummaryIntent
 
 class SummaryActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,7 +90,7 @@ class SummaryActivity : ComponentActivity() {
 fun SummaryScreen(summaryItem: SummaryItem) {
     val context = LocalContext.current
     var currentSummary by remember { mutableStateOf(summaryItem.summary) }
-    
+
     SummaryContent(
         summaryId = summaryItem.id,
         title = summaryItem.title,
@@ -121,7 +122,7 @@ fun SummaryContent(
 
     // Selected bottom nav tab (-1 = none, 0 = Snippets/Home, 1 = Readability, 2 = AI Adjust)
     var selectedTab by rememberSaveable { mutableStateOf(-1) }
-    
+
     // Reading settings state
     var readingSettings by rememberSaveable(stateSaver = ReadingSettingsSaver) {
         mutableStateOf(ReadingSettings())
@@ -160,21 +161,14 @@ fun SummaryContent(
                 },
                 actions = {
                     IconButton(onClick = {
-                        val shareIntent = Intent().apply {
-                            action = Intent.ACTION_SEND
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_SUBJECT, title)
-                            putExtra(Intent.EXTRA_TEXT, buildString {
-                                append(title)
-                                append("\n\n")
-                                append(summaryText)
-                                if (!link.isNullOrBlank()) {
-                                    append("\n\n")
-                                    append("Link: $link")
-                                }
-                            })
-                        }
-                        currentContext.startActivity(Intent.createChooser(shareIntent, "Share summary"))
+                        val intent = buildShareSummaryIntent(
+                            context = currentContext,
+                            title = title,
+                            summaryText = summaryText,
+                            link = link,
+                            imagePath = imagePath
+                        )
+                        currentContext.startActivity(Intent.createChooser(intent, "Share summary"))
                     }) {
                         Icon(
                             imageVector = Icons.Default.Share,
@@ -279,7 +273,7 @@ fun SummaryBottomNavigation(
     onSummaryRegenerated: (String) -> Unit
 ) {
     val context = LocalContext.current
-    
+
     Column {
         // Tab content area
         if (selectedTab == 2) {
@@ -305,9 +299,9 @@ fun SummaryBottomNavigation(
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    
+
                     Spacer(Modifier.height(8.dp))
-                    
+
                     // Text size presets
                     Row(
                         modifier = Modifier
@@ -324,9 +318,9 @@ fun SummaryBottomNavigation(
                             )
                         }
                     }
-                    
+
                     Spacer(Modifier.height(8.dp))
-                    
+
                     // Toggle options
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -346,7 +340,7 @@ fun SummaryBottomNavigation(
                                 onCheckedChange = { onSettingsChange(settings.copy(comfortableSpacing = it)) }
                             )
                         }
-                        
+
                         Row(
                             modifier = Modifier.weight(1f),
                             verticalAlignment = Alignment.CenterVertically,
@@ -365,7 +359,7 @@ fun SummaryBottomNavigation(
                 }
             }
         }
-        
+
         // Navigation bar
         NavigationBar {
             NavigationBarItem(
@@ -386,7 +380,7 @@ fun SummaryBottomNavigation(
                 icon = { Icon(Icons.Filled.FormatSize, contentDescription = "Readability") },
                 label = { Text("Readability") },
                 selected = selectedTab == 1,
-                onClick = { 
+                onClick = {
                     // Toggle: if already selected, deselect (go back to -1)
                     onTabSelected(if (selectedTab == 1) -1 else 1)
                 }
@@ -395,7 +389,7 @@ fun SummaryBottomNavigation(
                 icon = { Icon(Icons.Filled.AutoAwesome, contentDescription = "AI Adjust") },
                 label = { Text("AI Adjust") },
                 selected = selectedTab == 2,
-                onClick = { 
+                onClick = {
                     // Toggle: if already selected, deselect (go back to -1)
                     onTabSelected(if (selectedTab == 2) -1 else 2)
                 }

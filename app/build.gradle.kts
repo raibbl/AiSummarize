@@ -8,12 +8,13 @@ plugins {
 android {
     namespace = "com.raibbl.AiAnalyze"
     compileSdk = 35
-
+    ndkVersion = "29.0.14206865"
+    android.defaultConfig.ndk.debugSymbolLevel = "FULL"
     defaultConfig {
         applicationId = "com.raibbl.AiAnalyze"
         minSdk = 24
         targetSdk = 35
-        versionCode = 4
+        versionCode = 9
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -24,11 +25,13 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true // Highly Recommended: Removes unused resources too
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+
         }
     }
     compileOptions {

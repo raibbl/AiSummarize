@@ -38,4 +38,7 @@ interface SummaryDao {
     // Count summaries (used to seed an onboarding item once)
     @Query("SELECT COUNT(*) FROM summaries")
     suspend fun getSummaryCount(): Int
+
+    @Query("SELECT * FROM summaries WHERE imagePath = :path LIMIT 1")
+    suspend fun getSummaryByImagePath(path: String): SummaryItem?
 }

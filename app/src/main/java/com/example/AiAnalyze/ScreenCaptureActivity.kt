@@ -17,28 +17,22 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import com.raibbl.AiAnalyze.ScreenshotSummaryActivity
-import com.raibbl.AiAnalyze.SummaryGeminiService
-import com.raibbl.AiAnalyze.services.MediaProjectionService
-import com.raibbl.AiAnalyze.data.db.AppDatabase
-import com.raibbl.AiAnalyze.data.db.SummaryItem
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.raibbl.AiAnalyze.data.db.AppDatabase
+import com.raibbl.AiAnalyze.data.db.SummaryItem
+import com.raibbl.AiAnalyze.services.MediaProjectionService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 
-
-
 class ScreenCaptureActivity : Activity() {
 
     private lateinit var mediaProjectionManager: MediaProjectionManager
     private var mediaProjection: MediaProjection? = null
-    private var projectionResult: Intent? = null
-    private var projectionResultCode: Int = 0
     private var lastScreenshotPath: String? = null
 
     companion object {
@@ -47,43 +41,42 @@ class ScreenCaptureActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mediaProjectionManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+
+        mediaProjectionManager =
+            getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+
+        createNotificationChannel()
+
+        // Ask user for screen capture consent (screenshot-only; no service needed)
         val captureIntent = mediaProjectionManager.createScreenCaptureIntent()
         startActivityForResult(captureIntent, REQUEST_CODE_CAPTURE)
-        createNotificationChannel()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if (requestCode == REQUEST_CODE_CAPTURE && resultCode == RESULT_OK && data != null) {
-            // Store the projection result
-            projectionResult = data
-            projectionResultCode = resultCode
+        if (requestCode != REQUEST_CODE_CAPTURE) return
 
-            // Start the service first
-            val serviceIntent = Intent(this, MediaProjectionService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent)
-            } else {
-                startService(serviceIntent)
-            }
-
-            // Wait for service to be fully started
-            Handler(Looper.getMainLooper()).postDelayed({
-                startProjection()
-            }, 500) // Give the service more time to start
-        } else {
+        if (resultCode != RESULT_OK || data == null) {
             Toast.makeText(this, "Screen capture permission denied.", Toast.LENGTH_SHORT).show()
             finish()
+            return
         }
+
+        val serviceIntent = Intent(this, MediaProjectionService::class.java).apply {
+            putExtra(MediaProjectionService.EXTRA_RESULT_CODE, resultCode)
+            putExtra(MediaProjectionService.EXTRA_DATA_INTENT, data)
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(serviceIntent)
+        else startService(serviceIntent)
+
+        finish()
     }
-    private fun startProjection() {
+
+    private fun startProjection(resultCode: Int, data: Intent) {
         try {
-            mediaProjection = mediaProjectionManager.getMediaProjection(
-                projectionResultCode,
-                projectionResult!!
-            )
+            mediaProjection = mediaProjectionManager.getMediaProjection(resultCode, data)
 
             mediaProjection?.registerCallback(object : MediaProjection.Callback() {
                 override fun onStop() {
@@ -93,22 +86,18 @@ class ScreenCaptureActivity : Activity() {
 
             captureScreen()
         } catch (e: Exception) {
-            Toast.makeText(this, "Failed to start projection: ${e.message}", Toast.LENGTH_SHORT).show()
+            android.util.Log.e("ScreenCapture", "Failed to start projection", e)
+            Toast.makeText(this, "Failed to start projection: ${e.message}", Toast.LENGTH_LONG).show()
             finish()
         }
     }
-
-
-
     private fun captureScreen() {
         val metrics = resources.displayMetrics
         val width = metrics.widthPixels
         val height = metrics.heightPixels
         val density = metrics.densityDpi
 
-        val imageReader = ImageReader.newInstance(
-            width, height, PixelFormat.RGBA_8888, 2
-        )
+        val imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
 
         val virtualDisplay = mediaProjection?.createVirtualDisplay(
             "ScreenCapture",
@@ -128,13 +117,15 @@ class ScreenCaptureActivity : Activity() {
                 image.close()
 
                 bitmap?.let {
-                    // Save bitmap so we can show it later in the screenshot summary screen
                     lastScreenshotPath = saveBitmapToFile(it)
                     analyzeTextWithMLKit(it)
                 } ?: run {
                     Toast.makeText(this, "Failed to capture screen.", Toast.LENGTH_SHORT).show()
                     finish()
                 }
+            } else {
+                Toast.makeText(this, "No image captured.", Toast.LENGTH_SHORT).show()
+                finish()
             }
 
             virtualDisplay?.release()
@@ -161,7 +152,6 @@ class ScreenCaptureActivity : Activity() {
         val rowStride = image.planes[0].rowStride
         val rowPadding = rowStride - pixelStride * image.width
 
-        // Create a Bitmap
         val bitmap = Bitmap.createBitmap(
             image.width + rowPadding / pixelStride,
             image.height,
@@ -169,10 +159,8 @@ class ScreenCaptureActivity : Activity() {
         )
         bitmap.copyPixelsFromBuffer(buffer)
 
-        // Crop the extra padding
         return Bitmap.createBitmap(bitmap, 0, 0, image.width, image.height)
     }
-
 
     private fun analyzeTextWithMLKit(bitmap: Bitmap) {
         val image = InputImage.fromBitmap(bitmap, 0)
@@ -180,24 +168,18 @@ class ScreenCaptureActivity : Activity() {
 
         recognizer.process(image)
             .addOnSuccessListener { visionText ->
-                // Display the recognized text
-                //Toast.makeText(this, "Detected text: ${visionText.text}", Toast.LENGTH_LONG).show()
                 summarizeTextWithVertexAI(visionText.text)
-                println(visionText.text)
             }
             .addOnFailureListener { e ->
-                // Handle errors
                 Toast.makeText(this, "Text recognition failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
     private fun summarizeTextWithVertexAI(inputText: String) {
-        // Use a coroutine to call Gemini and then persist the result
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val summaryText = SummaryGeminiService.summarizeScreenText(inputText)
 
-                // Save summary in Room so it behaves like link-based summaries
                 val db = AppDatabase.getDatabase(this@ScreenCaptureActivity)
                 val summaryDao = db.summaryDao()
                 val summaryItem = SummaryItem(
@@ -207,28 +189,23 @@ class ScreenCaptureActivity : Activity() {
                     summary = summaryText,
                     imagePath = lastScreenshotPath
                 )
-                val id = summaryDao.insertSummary(summaryItem).toInt()
+                summaryDao.insertSummary(summaryItem)
 
-                // Launch screenshot-specific summary screen with image + text
                 Handler(Looper.getMainLooper()).post {
                     val intent = Intent(this@ScreenCaptureActivity, ScreenshotSummaryActivity::class.java).apply {
                         putExtra("EXTRA_SUMMARY", summaryText)
                         putExtra("EXTRA_SCREENSHOT_PATH", lastScreenshotPath)
                     }
-                    println("Launching ScreenshotSummaryActivity for screenshot summary id=$id, path=$lastScreenshotPath")
                     startActivity(intent)
-                    println("Summary: $summaryText")
                     finish()
                 }
             } catch (e: Exception) {
-                // Handle errors
                 runOnUiThread {
                     Toast.makeText(this@ScreenCaptureActivity, "Summarization failed: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
-
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -244,21 +221,19 @@ class ScreenCaptureActivity : Activity() {
         }
     }
 
+
     private fun showSummaryNotification(summary: String) {
         createNotificationChannel()
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         val notificationBuilder = NotificationCompat.Builder(this, "summary_channel")
-            .setSmallIcon(R.drawable.ic_notification) // Replace with your app's notification icon
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("AI Summary")
             .setContentText(summary)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(summary)) // Expandable text
+            .setStyle(NotificationCompat.BigTextStyle().bigText(summary))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setAutoCancel(true)
 
-        // Show the notification
         notificationManager.notify(1001, notificationBuilder.build())
     }
-
-
 }
