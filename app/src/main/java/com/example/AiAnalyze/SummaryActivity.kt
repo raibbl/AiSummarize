@@ -12,7 +12,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.FormatSize
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -32,21 +35,19 @@ import kotlinx.coroutines.launch
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.filled.FormatSize
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.raibbl.AiAnalyze.utils.goHomeClearTask
 import java.io.File
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.isUnspecified
 import androidx.compose.ui.unit.sp
 import com.raibbl.AiAnalyze.ui.components.ReadingSettings
-import com.raibbl.AiAnalyze.ui.components.ReadingSettingsBottomSheet
 import com.raibbl.AiAnalyze.ui.components.ReadingSettingsSaver
+import com.raibbl.AiAnalyze.ui.components.TextSizePreset
 import com.raibbl.AiAnalyze.utils.EXTRA_SUMMARY_ID
+import androidx.compose.foundation.horizontalScroll
 
 class SummaryActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,8 +101,10 @@ fun SummaryContent(
 ) {
     val currentContext = LocalContext.current
 
-    // Reading sheet state
-    var showReading by rememberSaveable { mutableStateOf(false) }
+    // Selected bottom nav tab (-1 = none, 0 = Snippets/Home, 1 = Readability)
+    var selectedTab by rememberSaveable { mutableStateOf(-1) }
+    
+    // Reading settings state
     var readingSettings by rememberSaveable(stateSaver = ReadingSettingsSaver) {
         mutableStateOf(ReadingSettings())
     }
@@ -132,22 +135,43 @@ fun SummaryContent(
                 navigationIcon = {
                     IconButton(onClick = { (currentContext as? ComponentActivity)?.finish() }) {
                         Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close"
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back"
                         )
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showReading = true }) {
+                    IconButton(onClick = {
+                        val shareIntent = Intent().apply {
+                            action = Intent.ACTION_SEND
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_SUBJECT, title)
+                            putExtra(Intent.EXTRA_TEXT, buildString {
+                                append(title)
+                                append("\n\n")
+                                append(summaryText)
+                                if (!link.isNullOrBlank()) {
+                                    append("\n\n")
+                                    append("Link: $link")
+                                }
+                            })
+                        }
+                        currentContext.startActivity(Intent.createChooser(shareIntent, "Share summary"))
+                    }) {
                         Icon(
-                            imageVector = Icons.Filled.FormatSize,
-                            contentDescription = "Reading settings"
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Share"
                         )
                     }
-                    TextButton(onClick = { (currentContext as? Activity)?.goHomeClearTask() }) {
-                        Text("Go to App", color = MaterialTheme.colorScheme.secondary)
-                    }
                 }
+            )
+        },
+        bottomBar = {
+            SummaryBottomNavigation(
+                selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it },
+                settings = readingSettings,
+                onSettingsChange = { readingSettings = it }
             )
         }
     ) { innerPadding ->
@@ -217,13 +241,121 @@ fun SummaryContent(
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
+}
 
-    // Render the bottom sheet
-    if (showReading) {
-        ReadingSettingsBottomSheet(
-            settings = readingSettings,
-            onSettingsChange = { readingSettings = it },
-            onDismiss = { showReading = false }
-        )
+@Composable
+fun SummaryBottomNavigation(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
+    settings: ReadingSettings,
+    onSettingsChange: (ReadingSettings) -> Unit
+) {
+    val context = LocalContext.current
+    
+    Column {
+        // Tab content area
+        if (selectedTab == 1) {
+            // Readability options
+            Surface(
+                tonalElevation = 3.dp,
+                shadowElevation = 8.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    Text(
+                        text = "Reading Options",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    
+                    Spacer(Modifier.height(8.dp))
+                    
+                    // Text size presets
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        TextSizePreset.entries.forEach { preset ->
+                            val selected = settings.sizePreset == preset
+                            FilterChip(
+                                selected = selected,
+                                onClick = { onSettingsChange(settings.copy(sizePreset = preset)) },
+                                label = { Text(preset.label) }
+                            )
+                        }
+                    }
+                    
+                    Spacer(Modifier.height(8.dp))
+                    
+                    // Toggle options
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Spacing",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Switch(
+                                checked = settings.comfortableSpacing,
+                                onCheckedChange = { onSettingsChange(settings.copy(comfortableSpacing = it)) }
+                            )
+                        }
+                        
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Center",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Switch(
+                                checked = settings.centerText,
+                                onCheckedChange = { onSettingsChange(settings.copy(centerText = it)) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Navigation bar
+        NavigationBar {
+            NavigationBarItem(
+                icon = { Icon(Icons.Filled.Home, contentDescription = "Snippets") },
+                label = { Text("Snippets") },
+                selected = selectedTab == 0,
+                onClick = {
+                    onTabSelected(0)
+                    // Navigate to home/MainActivity
+                    val intent = Intent(context, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    }
+                    context.startActivity(intent)
+                    (context as? Activity)?.finish()
+                }
+            )
+            NavigationBarItem(
+                icon = { Icon(Icons.Filled.FormatSize, contentDescription = "Readability") },
+                label = { Text("Readability") },
+                selected = selectedTab == 1,
+                onClick = { 
+                    // Toggle: if already selected, deselect (go back to 0)
+                    onTabSelected(if (selectedTab == 1) 0 else 1)
+                }
+            )
+        }
     }
 }
