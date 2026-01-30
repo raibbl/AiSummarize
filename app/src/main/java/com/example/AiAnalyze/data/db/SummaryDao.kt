@@ -11,6 +11,10 @@ interface SummaryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSummary(summaryItem: SummaryItem): Long
 
+    // Update an existing summary item
+    @Update
+    suspend fun updateSummary(summaryItem: SummaryItem)
+
     // Fetch all summaries from the database, ordered by the newest first
     @Query("SELECT * FROM summaries ORDER BY timestamp DESC")
     fun getAllSummaries(): LiveData<List<SummaryItem>>

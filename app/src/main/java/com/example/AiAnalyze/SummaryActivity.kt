@@ -1,5 +1,7 @@
 package com.raibbl.AiAnalyze
 
+import LinedPaperSurface
+import LinkCard
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -13,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Share
@@ -43,6 +46,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.isUnspecified
 import androidx.compose.ui.unit.sp
+import com.raibbl.AiAnalyze.ui.components.AISummaryAdjustBar
 import com.raibbl.AiAnalyze.ui.components.ReadingSettings
 import com.raibbl.AiAnalyze.ui.components.ReadingSettingsSaver
 import com.raibbl.AiAnalyze.ui.components.TextSizePreset
@@ -83,25 +87,39 @@ class SummaryActivity : ComponentActivity() {
 
 @Composable
 fun SummaryScreen(summaryItem: SummaryItem) {
+    val context = LocalContext.current
+    var currentSummary by remember { mutableStateOf(summaryItem.summary) }
+    
     SummaryContent(
+        summaryId = summaryItem.id,
         title = summaryItem.title,
-        summaryText = summaryItem.summary,
+        summaryText = currentSummary,
         link = summaryItem.link,
-        imagePath = summaryItem.imagePath
+        imagePath = summaryItem.imagePath,
+        onSummaryChanged = { newSummary ->
+            currentSummary = newSummary
+            // Update in database
+            (context as? ComponentActivity)?.lifecycleScope?.launch {
+                val db = AppDatabase.getDatabase(context)
+                db.summaryDao().updateSummary(summaryItem.copy(summary = newSummary))
+            }
+        }
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SummaryContent(
+    summaryId: Int,
     title: String,
     summaryText: String,
     link: String? = null,
-    imagePath: String? = null
+    imagePath: String? = null,
+    onSummaryChanged: (String) -> Unit = {}
 ) {
     val currentContext = LocalContext.current
 
-    // Selected bottom nav tab (-1 = none, 0 = Snippets/Home, 1 = Readability)
+    // Selected bottom nav tab (-1 = none, 0 = Snippets/Home, 1 = Readability, 2 = AI Adjust)
     var selectedTab by rememberSaveable { mutableStateOf(-1) }
     
     // Reading settings state
@@ -171,7 +189,13 @@ fun SummaryContent(
                 selectedTab = selectedTab,
                 onTabSelected = { selectedTab = it },
                 settings = readingSettings,
-                onSettingsChange = { readingSettings = it }
+                onSettingsChange = { readingSettings = it },
+                originalText = summaryText,
+                link = link,
+                onSummaryRegenerated = { newSummary ->
+                    onSummaryChanged(newSummary)
+                    selectedTab = -1  // Close the panel after regenerating
+                }
             )
         }
     ) { innerPadding ->
@@ -212,31 +236,32 @@ fun SummaryContent(
                 }
             }
 
-            Text(
-                text = summaryText,
-                style = summaryStyle,
-                textAlign = summaryAlign,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-            )
-
-            if (!link.isNullOrBlank()) {
+            LinedPaperSurface(
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(
-                    text = "Link:  $link",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.primary,
-                        textDecoration = TextDecoration.Underline
-                    ),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .padding(4.dp)
-                        .clickable {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
-                            currentContext.startActivity(intent)
-                        }
+                    text = summaryText,
+                    style = summaryStyle,
+                    textAlign = summaryAlign,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
+            if (!link.isNullOrBlank()) {
+                Spacer(Modifier.height(12.dp))
+
+                LinkCard(
+                    url = link,
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
+                        currentContext.startActivity(intent)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 6.dp),
+                    label = "Source"
+                )
+            }
+
 
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -248,13 +273,23 @@ fun SummaryBottomNavigation(
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
     settings: ReadingSettings,
-    onSettingsChange: (ReadingSettings) -> Unit
+    onSettingsChange: (ReadingSettings) -> Unit,
+    originalText: String,
+    link: String?,
+    onSummaryRegenerated: (String) -> Unit
 ) {
     val context = LocalContext.current
     
     Column {
         // Tab content area
-        if (selectedTab == 1) {
+        if (selectedTab == 2) {
+            // AI Adjust options
+            AISummaryAdjustBar(
+                originalText = originalText,
+                link = link,
+                onSummaryRegenerated = onSummaryRegenerated
+            )
+        } else if (selectedTab == 1) {
             // Readability options
             Surface(
                 tonalElevation = 3.dp,
@@ -352,8 +387,17 @@ fun SummaryBottomNavigation(
                 label = { Text("Readability") },
                 selected = selectedTab == 1,
                 onClick = { 
-                    // Toggle: if already selected, deselect (go back to 0)
-                    onTabSelected(if (selectedTab == 1) 0 else 1)
+                    // Toggle: if already selected, deselect (go back to -1)
+                    onTabSelected(if (selectedTab == 1) -1 else 1)
+                }
+            )
+            NavigationBarItem(
+                icon = { Icon(Icons.Filled.AutoAwesome, contentDescription = "AI Adjust") },
+                label = { Text("AI Adjust") },
+                selected = selectedTab == 2,
+                onClick = { 
+                    // Toggle: if already selected, deselect (go back to -1)
+                    onTabSelected(if (selectedTab == 2) -1 else 2)
                 }
             )
         }

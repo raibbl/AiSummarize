@@ -78,4 +78,13 @@ object SummaryGeminiService {
 
         return LinkSummaryResult(summary = summaryText, title = titleText)
     }
+
+    /**
+     * Regenerate a summary with a specific style prompt.
+     */
+    suspend fun regenerateWithStyle(prompt: String): String {
+        val response = generativeModel.generateContent(prompt)
+        return response.text?.trim()
+            ?: throw IllegalStateException("Empty summary returned from Gemini")
+    }
 }

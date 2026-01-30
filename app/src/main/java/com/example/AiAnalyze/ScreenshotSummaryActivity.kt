@@ -27,7 +27,9 @@ class ScreenshotSummaryActivity : ComponentActivity() {
                     title = "Screenshot summary",
                     summaryText = summaryText,
                     link = null,
-                    imagePath = imagePath
+                    imagePath = imagePath,
+                    summaryId = TODO(),
+                    onSummaryChanged = TODO()
                 )
             }
         }
