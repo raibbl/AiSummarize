@@ -21,7 +21,7 @@ object SummaryGeminiService {
      */
     suspend fun summarizeScreenText(inputText: String): String {
         val prompt = """
-            The following text is captured from a screen. Please provide a concise and clear summary of the key points:
+            Summarize the key information from this screen capture. Include the main points and any important details or outcomes in 4-5 sentences:
 
             "$inputText"
         """.trimIndent()
@@ -40,12 +40,12 @@ object SummaryGeminiService {
 
         val summaryPrompt = if (fallbackToUrlPrompt) {
             """
-            Read and analyze the full content at the following URL: $link.
-            Write a concise summary in 1–2 short paragraphs highlighting the main ideas.
+            Read the content at this URL: $link
+            Write a concise summary that captures the main ideas, key points, and any important conclusions in 5-6 sentences.
             """.trimIndent()
         } else {
             """
-            Summarize the following article in 1–2 paragraphs, clearly stating the main ideas:
+            Write a concise summary of this article that captures the main ideas, key points, and any important conclusions in 5-6 sentences:
 
             $articleText
             """.trimIndent()
