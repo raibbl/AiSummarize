@@ -19,7 +19,7 @@ interface SummaryDao {
     @Query("SELECT * FROM summaries ORDER BY timestamp DESC")
     fun getAllSummaries(): LiveData<List<SummaryItem>>
 
-    @Query("SELECT * FROM summaries WHERE summary LIKE '%' || :query || '%' OR title LIKE '%' || :query || '%' OR link LIKE '%' || :query || '%' ORDER BY timestamp DESC")
+    @Query("SELECT * FROM summaries WHERE summary LIKE '%' || :query || '%' OR title LIKE '%' || :query || '%' OR link LIKE '%' || :query || '%' OR tags LIKE '%' || :query || '%' ORDER BY timestamp DESC")
     fun searchSummaries(query: String): LiveData<List<SummaryItem>>
 
 
@@ -41,4 +41,12 @@ interface SummaryDao {
 
     @Query("SELECT * FROM summaries WHERE imagePath = :path LIMIT 1")
     suspend fun getSummaryByImagePath(path: String): SummaryItem?
+
+    // Update tags for a specific summary
+    @Query("UPDATE summaries SET tags = :tags WHERE id = :id")
+    suspend fun updateTags(id: Int, tags: String?)
+
+    // Get all distinct tags (returns raw comma-separated strings; parse in ViewModel)
+    @Query("SELECT DISTINCT tags FROM summaries WHERE tags IS NOT NULL AND tags != ''")
+    fun getAllRawTags(): LiveData<List<String>>
 }

@@ -21,6 +21,7 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.SwipeToDismiss
 import androidx.compose.material.rememberDismissState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -34,6 +35,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,6 +65,8 @@ fun SummaryUiItem(summaryItem: SummaryItem, modifier: Modifier = Modifier) {
     val viewModel: SummaryViewModel = viewModel(factory = factory)
     val formattedTime = rememberFormattedTimestamp(summaryItem.timestamp)
     var expanded by remember { mutableStateOf(false) }
+    var showTagEditor by remember { mutableStateOf(false) }
+    val allTags by viewModel.allTags.observeAsState(emptyList())
     val dismissState = rememberDismissState(
         confirmStateChange = {
             if (it == DismissValue.DismissedToStart) {
@@ -186,6 +190,44 @@ fun SummaryUiItem(summaryItem: SummaryItem, modifier: Modifier = Modifier) {
                             }
                         }
 
+                        // User tags row
+                        val userTags = summaryItem.tagList()
+                        if (userTags.isNotEmpty() || expanded) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.padding(top = 6.dp)
+                            ) {
+                                userTags.forEach { tag ->
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = AppTheme.colors.tagBg
+                                    ) {
+                                        Text(
+                                            text = tag,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = AppTheme.colors.tagText,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        )
+                                    }
+                                }
+                                if (expanded) {
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = AppTheme.colors.filterChipBg,
+                                        onClick = { showTagEditor = true }
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Add,
+                                            contentDescription = "Add tag",
+                                            tint = AppTheme.colors.filterChipText,
+                                            modifier = Modifier.padding(4.dp).size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
                         // Title row
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -278,6 +320,19 @@ fun SummaryUiItem(summaryItem: SummaryItem, modifier: Modifier = Modifier) {
             }
         }
     )
+
+    // Tag editor dialog
+    if (showTagEditor) {
+        TagEditorDialog(
+            currentTags = summaryItem.tagList(),
+            previouslyUsedTags = allTags,
+            onSave = { newTags ->
+                viewModel.updateTags(summaryItem.id, newTags)
+                showTagEditor = false
+            },
+            onDismiss = { showTagEditor = false }
+        )
+    }
 }
 @SuppressLint("RememberReturnType")
 @Composable

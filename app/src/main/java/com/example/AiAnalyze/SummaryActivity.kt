@@ -33,7 +33,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.raibbl.AiAnalyze.data.db.AppDatabase
 import com.raibbl.AiAnalyze.data.db.SummaryItem
+import com.raibbl.AiAnalyze.ui.components.TagEditorDialog
 import com.raibbl.AiAnalyze.ui.theme.AiSummarizeTheme
+import com.raibbl.AiAnalyze.ui.theme.AppTheme
 import kotlinx.coroutines.launch
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.rememberScrollState
@@ -52,6 +54,10 @@ import com.raibbl.AiAnalyze.ui.components.ReadingSettingsSaver
 import com.raibbl.AiAnalyze.ui.components.TextSizePreset
 import com.raibbl.AiAnalyze.utils.EXTRA_SUMMARY_ID
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Edit
 import com.raibbl.AiAnalyze.utils.buildShareSummaryIntent
 
 class SummaryActivity : ComponentActivity() {
@@ -90,6 +96,7 @@ class SummaryActivity : ComponentActivity() {
 fun SummaryScreen(summaryItem: SummaryItem) {
     val context = LocalContext.current
     var currentSummary by remember { mutableStateOf(summaryItem.summary) }
+    var currentTags by remember { mutableStateOf(summaryItem.tagList()) }
 
     SummaryContent(
         summaryId = summaryItem.id,
@@ -97,9 +104,17 @@ fun SummaryScreen(summaryItem: SummaryItem) {
         summaryText = currentSummary,
         link = summaryItem.link,
         imagePath = summaryItem.imagePath,
+        tags = currentTags,
+        onTagsChanged = { newTags ->
+            currentTags = newTags
+            (context as? ComponentActivity)?.lifecycleScope?.launch {
+                val db = AppDatabase.getDatabase(context)
+                val joined = newTags.joinToString(",").ifEmpty { null }
+                db.summaryDao().updateTags(summaryItem.id, joined)
+            }
+        },
         onSummaryChanged = { newSummary ->
             currentSummary = newSummary
-            // Update in database
             (context as? ComponentActivity)?.lifecycleScope?.launch {
                 val db = AppDatabase.getDatabase(context)
                 db.summaryDao().updateSummary(summaryItem.copy(summary = newSummary))
@@ -108,7 +123,7 @@ fun SummaryScreen(summaryItem: SummaryItem) {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SummaryContent(
     summaryId: Int,
@@ -116,8 +131,11 @@ fun SummaryContent(
     summaryText: String,
     link: String? = null,
     imagePath: String? = null,
+    tags: List<String> = emptyList(),
+    onTagsChanged: (List<String>) -> Unit = {},
     onSummaryChanged: (String) -> Unit = {}
 ) {
+    var showTagEditor by remember { mutableStateOf(false) }
     val currentContext = LocalContext.current
 
     // Selected bottom nav tab (-1 = none, 0 = Snippets/Home, 1 = Readability, 2 = AI Adjust)
@@ -257,8 +275,70 @@ fun SummaryContent(
             }
 
 
+            // Tags section
+            Spacer(Modifier.height(16.dp))
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                ) {
+                    Text(
+                        text = "Tags",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = { showTagEditor = true }) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Edit tags",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+                if (tags.isNotEmpty()) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        tags.forEach { tag ->
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = AppTheme.colors.tagBg
+                            ) {
+                                Text(
+                                    text = tag,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = AppTheme.colors.tagText,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Text(
+                        text = "No tags yet — tap edit to add some.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+
+    if (showTagEditor) {
+        TagEditorDialog(
+            currentTags = tags,
+            previouslyUsedTags = emptyList(), // no ViewModel here; just built-in suggestions
+            onSave = { newTags ->
+                onTagsChanged(newTags)
+                showTagEditor = false
+            },
+            onDismiss = { showTagEditor = false }
+        )
     }
 }
 

@@ -60,7 +60,7 @@ class LinkSummaryActivity : ComponentActivity() {
                 val result = SummaryGeminiService.summarizeLink(link = link, articleText = articleText)
 
                 runOnUiThread {
-                    saveSummaryAndLaunchUI(result.summary, link, result.title)
+                    saveSummaryAndLaunchUI(result.summary, link, result.title, result.tags)
                 }
             } catch (e: Exception) {
                 Log.e("failed to summarize using AI", "", e)
@@ -74,7 +74,7 @@ class LinkSummaryActivity : ComponentActivity() {
 
         }
     }
-    private fun saveSummaryAndLaunchUI(summary: String, link: String, title: String) {
+    private fun saveSummaryAndLaunchUI(summary: String, link: String, title: String, tags: List<String> = emptyList()) {
         lifecycleScope.launch {
             val db = AppDatabase.getDatabase(this@LinkSummaryActivity)
             val summaryDao = db.summaryDao()
@@ -82,7 +82,8 @@ class LinkSummaryActivity : ComponentActivity() {
                 type = "link",
                 link = link,
                 title = title,
-                summary = summary
+                summary = summary,
+                tags = tags.joinToString(",").ifEmpty { null }
             )
             val id = summaryDao.insertSummary(summaryItem).toInt()
             val intent = Intent(this@LinkSummaryActivity, SummaryActivity::class.java).apply {

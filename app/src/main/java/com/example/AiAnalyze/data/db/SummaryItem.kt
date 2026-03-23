@@ -11,5 +11,10 @@ data class SummaryItem(
     val summary: String,
     val title: String,
     val imagePath: String? = null,
+    val tags: String? = null, // comma-separated, e.g. "Tech,AI"
     val timestamp: Long = System.currentTimeMillis()
-)
+) {
+    /** Parsed tag list (empty if null/blank). */
+    fun tagList(): List<String> =
+        tags?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
+}

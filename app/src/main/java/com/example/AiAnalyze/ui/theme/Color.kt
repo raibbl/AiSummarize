@@ -68,6 +68,16 @@ data class AppColors(
     // Card border
     val cardBorder: Color,
 
+    // User tags on cards
+    val tagBg: Color,
+    val tagText: Color,
+
+    // Filter chip bar
+    val filterChipBg: Color,
+    val filterChipText: Color,
+    val filterChipSelectedBg: Color,
+    val filterChipSelectedText: Color,
+
     // Empty-state icon + text
     val emptyIcon: Color,
     val emptyText: Color,
@@ -88,6 +98,12 @@ val DarkAppColors = AppColors(
     topBarContainer = Color(0xFF0F1F36),
     topBarContent = Blue80,
     cardBorder = Color(0xFF263F58),
+    tagBg = Color(0xFF1E3450),
+    tagText = Color(0xFFABC4D8),
+    filterChipBg = Color(0xFF1A2840),
+    filterChipText = Color(0xFF8EAEC4),
+    filterChipSelectedBg = Blue80,
+    filterChipSelectedText = Color(0xFF0A1222),
     emptyIcon = Color(0xFF3A5068),
     emptyText = Color(0xFF6A8299),
 )
@@ -107,6 +123,12 @@ val LightAppColors = AppColors(
     topBarContainer = Blue40,
     topBarContent = Color.White,
     cardBorder = Color(0xFFCBDAE4),
+    tagBg = Color(0xFFE2EDF4),
+    tagText = Color(0xFF2A5068),
+    filterChipBg = Color(0xFFDDE9F0),
+    filterChipText = Color(0xFF3A5E6C),
+    filterChipSelectedBg = Blue40,
+    filterChipSelectedText = Color.White,
     emptyIcon = Color(0xFFB8CDD9),
     emptyText = Color(0xFF6A8299),
 )

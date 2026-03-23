@@ -8,7 +8,8 @@ object SummaryGeminiService {
 
     data class LinkSummaryResult(
         val summary: String,
-        val title: String
+        val title: String,
+        val tags: List<String> = emptyList()
     )
 
     private val generativeModel by lazy {
@@ -55,28 +56,54 @@ object SummaryGeminiService {
         val summaryText = summaryResponse.text?.trim()
             ?: throw IllegalStateException("Empty summary returned from Gemini")
 
-        val titlePrompt = if (fallbackToUrlPrompt) {
-            """
-            You are an assistant that returns only one result with no explanation.
-            Return exactly one concise, 3 to 5 word title summarizing the content at this URL: $link
+        // Generate title + tags in a single call for efficiency
+        val titleTagPrompt = """
+            Based on this summary, return exactly two lines in this format:
+            Title: <3-5 word title>
+            Tags: <1-3 category tags, comma-separated>
 
-            Do not include explanations, quotes, or multiple options. Only return the title text.
-            """.trimIndent()
-        } else {
-            """
-            You are an assistant that returns only one result with no explanation.
-            Return exactly one concise, 3 to 5 word title summarizing the following article:
+            Summary: $summaryText
 
-            $articleText
+            Use general, professional categories for tags. Do not include any other text or explanations.
+        """.trimIndent()
 
-            Do not include explanations, quotes, or multiple options. Only return the title text.
-            """.trimIndent()
+        val titleTagResponse = generativeModel.generateContent(titleTagPrompt)
+        val responseText = titleTagResponse.text?.trim() ?: ""
+        
+        // Parse title - look for "Title:" prefix or use first line as fallback
+        val titleText = when {
+            responseText.contains("Title:", ignoreCase = true) -> {
+                responseText.lines()
+                    .firstOrNull { it.contains("Title:", ignoreCase = true) }
+                    ?.substringAfter(":", "")
+                    ?.trim()
+                    ?.takeIf { it.isNotBlank() }
+                    ?: "Untitled"
+            }
+            else -> responseText.lines().firstOrNull()?.trim()?.takeIf { it.isNotBlank() } ?: "Untitled"
+        }
+        
+        // Parse tags - look for "Tags:" prefix or use second line as fallback
+        val tags = when {
+            responseText.contains("Tags:", ignoreCase = true) -> {
+                responseText.lines()
+                    .firstOrNull { it.contains("Tags:", ignoreCase = true) }
+                    ?.substringAfter(":", "")
+                    ?.split(",")
+                    ?.map { it.trim() }
+                    ?.filter { it.isNotBlank() }
+                    ?: emptyList()
+            }
+            else -> {
+                responseText.lines().getOrNull(1)
+                    ?.split(",")
+                    ?.map { it.trim() }
+                    ?.filter { it.isNotBlank() }
+                    ?: emptyList()
+            }
         }
 
-        val titleResponse = generativeModel.generateContent(titlePrompt)
-        val titleText = titleResponse.text?.trim().takeUnless { it.isNullOrBlank() } ?: "Untitled"
-
-        return LinkSummaryResult(summary = summaryText, title = titleText)
+        return LinkSummaryResult(summary = summaryText, title = titleText, tags = tags)
     }
 
     /**
