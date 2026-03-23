@@ -4,9 +4,17 @@ import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.material.DismissDirection
 import androidx.compose.material.DismissValue
 import androidx.compose.material.ExperimentalMaterialApi
@@ -18,9 +26,11 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
@@ -35,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.raibbl.AiAnalyze.data.db.SummaryItem
 import com.raibbl.AiAnalyze.ui.theme.AiSummarizeTheme
+import com.raibbl.AiAnalyze.ui.theme.AppTheme
 import models.SummaryViewModel
 import models.SummaryViewModelFactory
 import androidx.core.content.FileProvider
@@ -71,7 +82,7 @@ fun SummaryUiItem(summaryItem: SummaryItem, modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(8.dp) // match Card padding
-                    .clip(MaterialTheme.shapes.medium) // match Card shape
+                    .clip(RoundedCornerShape(16.dp)) // match Card shape
                     .background(color),
                 contentAlignment = Alignment.CenterEnd
             ) {
@@ -84,35 +95,117 @@ fun SummaryUiItem(summaryItem: SummaryItem, modifier: Modifier = Modifier) {
             }
         },
         dismissContent = {
-            Card(modifier = modifier.padding(8.dp)) {
+            val isLink = summaryItem.type.equals("link", ignoreCase = true)
+            val isScreenshot = summaryItem.type.equals("screenshot", ignoreCase = true)
+            val accentColor = when {
+                isLink -> AppTheme.colors.accentLink
+                isScreenshot -> AppTheme.colors.accentScreenshot
+                else -> AppTheme.colors.accentInfo
+            }
+
+            Card(
+                modifier = modifier
+                    .padding(8.dp)
+                    .border(
+                        width = 1.dp,
+                        color = AppTheme.colors.cardBorder,
+                        shape = RoundedCornerShape(16.dp)
+                    ),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { expanded = !expanded }
-                        .padding(16.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = formattedTime,
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.align(Alignment.Start)
+                        .drawBehind {
+                            // Left accent strip
+                            drawRect(
+                                color = accentColor,
+                                topLeft = Offset.Zero,
+                                size = Size(4.dp.toPx(), size.height)
                             )
+                        }
+                        .clickable { expanded = !expanded }
+                        .padding(start = 20.dp, end = 16.dp, top = 16.dp, bottom = 16.dp)
+                        .animateContentSize(
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioLowBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        )
+                ) {
+                        // Timestamp pill + type badge row
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Timestamp pill
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = AppTheme.colors.timestampBg
+                            ) {
+                                Text(
+                                    text = formattedTime,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = AppTheme.colors.timestampText,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
+
+                            // Type badge
+                            val badgeLabel = when {
+                                isLink -> "Link"
+                                isScreenshot -> "Screenshot"
+                                else -> summaryItem.type.replaceFirstChar { it.uppercase() }
+                            }
+                            val badgeBg = when {
+                                isLink -> AppTheme.colors.badgeLinkBg
+                                isScreenshot -> AppTheme.colors.badgeScreenshotBg
+                                else -> AppTheme.colors.badgeInfoBg
+                            }
+                            val badgeText = when {
+                                isLink -> AppTheme.colors.badgeLinkText
+                                isScreenshot -> AppTheme.colors.badgeScreenshotText
+                                else -> AppTheme.colors.badgeInfoText
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = badgeBg
+                            ) {
+                                Text(
+                                    text = badgeLabel,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = badgeText,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
+                        }
+
+                        // Title row
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) {
                             Text(
                                 text = summaryItem.title,
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(top = 4.dp)
+                                modifier = Modifier.weight(1f)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            ShareIconButton(summaryItem = summaryItem)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = if (expanded) "Collapse" else "Expand",
+                                modifier = Modifier.size(20.dp)
                             )
                         }
-                        // Compact share icon always visible on the header row
-                        ShareIconButton(summaryItem = summaryItem)
-                        Icon(
-                            imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                            contentDescription = if (expanded) "Collapse" else "Expand",
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
 
                     Text(
                         text = summaryItem.summary,

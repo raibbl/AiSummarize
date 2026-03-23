@@ -1,13 +1,20 @@
 package com.raibbl.AiAnalyze.ui.components
 
 import android.app.Application
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -20,24 +27,56 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.raibbl.AiAnalyze.data.db.SummaryItem
 import com.raibbl.AiAnalyze.ui.theme.AiSummarizeTheme
+import com.raibbl.AiAnalyze.ui.theme.AppTheme
 import models.SummaryViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import models.SummaryViewModelFactory
 
 @Composable
 fun SummaryList(summaryItems: List<SummaryItem>, modifier: Modifier = Modifier) {
-    LazyColumn(modifier = modifier.padding(8.dp)) {
-        items(summaryItems, key = { it.id }) { summaryItem ->
-            SummaryUiItem(
-                summaryItem = summaryItem,
-                modifier = Modifier.fillMaxWidth()
-            )
+    if (summaryItems.isEmpty()) {
+        Box(
+            modifier = modifier.fillMaxSize().padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = Icons.Outlined.Lightbulb,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = AppTheme.colors.emptyIcon
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "No summaries yet",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = AppTheme.colors.emptyText
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Share a link or capture your screen\nto create your first summary.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppTheme.colors.emptyText,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    } else {
+        LazyColumn(modifier = modifier.padding(8.dp)) {
+            items(summaryItems, key = { it.id }) { summaryItem ->
+                SummaryUiItem(
+                    summaryItem = summaryItem,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }
