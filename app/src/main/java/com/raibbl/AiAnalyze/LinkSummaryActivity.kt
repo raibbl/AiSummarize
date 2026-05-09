@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.lifecycle.lifecycleScope
+import com.raibbl.AiAnalyze.data.billing.SubscriptionState
 import com.raibbl.AiAnalyze.data.db.AppDatabase
 import com.raibbl.AiAnalyze.data.db.SummaryItem
 import com.raibbl.AiAnalyze.ui.theme.AiSummarizeTheme
@@ -47,6 +48,25 @@ class LinkSummaryActivity : ComponentActivity() {
     private fun generateSummaryForLink(link: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                // Check usage limit before summarizing
+                val app = application.brieflyApp
+                val isPro = app.billingManager.subscriptionState.value is SubscriptionState.Pro
+                val freeLimit = app.remoteConfigManager.getFreeSummaryLimit()
+
+                app.usageRepository.ensureAuthenticated()
+                if (!app.usageRepository.canSummarize(isPro, freeLimit)) {
+                    val resetDate = app.usageRepository.getResetDate()
+                    runOnUiThread {
+                        val intent = Intent(this@LinkSummaryActivity, UpgradeActivity::class.java).apply {
+                            putExtra(UpgradeActivity.EXTRA_FREE_LIMIT, freeLimit)
+                            putExtra(UpgradeActivity.EXTRA_RESET_DATE, resetDate)
+                        }
+                        startActivity(intent)
+                        finish()
+                    }
+                    return@launch
+                }
+
                 // Try fetching article text from HTML
                 val articleText = try {
                     val document = org.jsoup.Jsoup.connect(link).get()
@@ -58,6 +78,9 @@ class LinkSummaryActivity : ComponentActivity() {
                 }
 
                 val result = SummaryGeminiService.summarizeLink(link = link, articleText = articleText)
+
+                // Increment usage count after successful summary
+                app.usageRepository.incrementCount()
 
                 runOnUiThread {
                     saveSummaryAndLaunchUI(result.summary, link, result.title, result.tags)

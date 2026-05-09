@@ -1,8 +1,9 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
     id("com.google.gms.google-services")
-    id("kotlin-kapt")
 }
 
 android {
@@ -14,7 +15,7 @@ android {
         applicationId = "com.raibbl.AiAnalyze"
         minSdk = 24
         targetSdk = 35
-        versionCode = 11
+        versionCode = 13
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -45,9 +46,6 @@ android {
         compose = true
         viewBinding = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.13"
-    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -74,17 +72,22 @@ dependencies {
     implementation(libs.jsoup)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
+    // Billing
+    implementation("com.android.billingclient:billing-ktx:7.1.1")
+    implementation("androidx.lifecycle:lifecycle-process:2.6.1")
+    // Firebase (versions managed by BOM)
+    implementation("com.google.firebase:firebase-config")
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
-    implementation ("androidx.room:room-runtime:2.6.1")
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
     implementation(libs.androidx.runtime.livedata)
-    kapt ("androidx.room:room-compiler:2.6.1")
-    implementation ("androidx.room:room-ktx:2.6.1")
     // extended icons like FormatSize
     implementation(libs.androidx.material.icons.extended)
-    //noinspection KaptUsageInsteadOfKsp
-    kapt(libs.androidx.room.compiler.v252)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

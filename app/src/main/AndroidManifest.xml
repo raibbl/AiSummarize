@@ -10,6 +10,7 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
+        android:name=".BrieflyApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -51,6 +52,11 @@
 
         <activity
             android:name=".ScreenshotSummaryActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AiSummarize" />
+
+        <activity
+            android:name=".UpgradeActivity"
             android:exported="false"
             android:theme="@style/Theme.AiSummarize" />
 

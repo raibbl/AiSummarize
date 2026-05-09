@@ -51,10 +51,10 @@ import androidx.compose.ui.unit.dp
 import com.raibbl.AiAnalyze.data.db.SummaryItem
 import com.raibbl.AiAnalyze.ui.theme.AiSummarizeTheme
 import com.raibbl.AiAnalyze.ui.theme.AppTheme
-import models.SummaryViewModel
+import com.raibbl.AiAnalyze.models.SummaryViewModel
 import com.raibbl.AiAnalyze.ui.components.BUILT_IN_SUGGESTIONS
 import androidx.lifecycle.viewmodel.compose.viewModel
-import models.SummaryViewModelFactory
+import com.raibbl.AiAnalyze.models.SummaryViewModelFactory
 
 @Composable
 fun SummaryList(summaryItems: List<SummaryItem>, modifier: Modifier = Modifier) {

@@ -48,8 +48,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.raibbl.AiAnalyze.data.db.SummaryItem
 import com.raibbl.AiAnalyze.ui.theme.AiSummarizeTheme
 import com.raibbl.AiAnalyze.ui.theme.AppTheme
-import models.SummaryViewModel
-import models.SummaryViewModelFactory
+import com.raibbl.AiAnalyze.models.SummaryViewModel
+import com.raibbl.AiAnalyze.models.SummaryViewModelFactory
 import androidx.core.content.FileProvider
 import com.raibbl.AiAnalyze.utils.buildShareSummaryIntent
 import java.text.SimpleDateFormat

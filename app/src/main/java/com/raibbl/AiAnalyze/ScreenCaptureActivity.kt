@@ -20,6 +20,7 @@ import androidx.core.app.NotificationCompat
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.raibbl.AiAnalyze.data.billing.SubscriptionState
 import com.raibbl.AiAnalyze.data.db.AppDatabase
 import com.raibbl.AiAnalyze.data.db.SummaryItem
 import com.raibbl.AiAnalyze.services.MediaProjectionService
@@ -178,6 +179,25 @@ class ScreenCaptureActivity : Activity() {
     private fun summarizeTextWithVertexAI(inputText: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                // Check usage limit before summarizing
+                val app = application.brieflyApp
+                val isPro = app.billingManager.subscriptionState.value is SubscriptionState.Pro
+                val freeLimit = app.remoteConfigManager.getFreeSummaryLimit()
+
+                app.usageRepository.ensureAuthenticated()
+                if (!app.usageRepository.canSummarize(isPro, freeLimit)) {
+                    val resetDate = app.usageRepository.getResetDate()
+                    Handler(Looper.getMainLooper()).post {
+                        val intent = Intent(this@ScreenCaptureActivity, UpgradeActivity::class.java).apply {
+                            putExtra(UpgradeActivity.EXTRA_FREE_LIMIT, freeLimit)
+                            putExtra(UpgradeActivity.EXTRA_RESET_DATE, resetDate)
+                        }
+                        startActivity(intent)
+                        finish()
+                    }
+                    return@launch
+                }
+
                 val summaryText = SummaryGeminiService.summarizeScreenText(inputText)
 
                 val db = AppDatabase.getDatabase(this@ScreenCaptureActivity)
@@ -190,6 +210,9 @@ class ScreenCaptureActivity : Activity() {
                     imagePath = lastScreenshotPath
                 )
                 summaryDao.insertSummary(summaryItem)
+
+                // Increment usage count after successful summary
+                app.usageRepository.incrementCount()
 
                 Handler(Looper.getMainLooper()).post {
                     val intent = Intent(this@ScreenCaptureActivity, ScreenshotSummaryActivity::class.java).apply {

@@ -1,4 +1,4 @@
-package models
+package com.raibbl.AiAnalyze.models
 
 import android.app.Application
 import androidx.lifecycle.ViewModel
