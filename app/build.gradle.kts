@@ -15,8 +15,8 @@ android {
         applicationId = "com.raibbl.AiAnalyze"
         minSdk = 24
         targetSdk = 35
-        versionCode = 13
-        versionName = "1.0"
+        versionCode = 15
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -73,7 +73,7 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     // Billing
-    implementation("com.android.billingclient:billing-ktx:7.1.1")
+    implementation("com.android.billingclient:billing-ktx:9.1.0")
     implementation("androidx.lifecycle:lifecycle-process:2.6.1")
     // Firebase (versions managed by BOM)
     implementation("com.google.firebase:firebase-config")

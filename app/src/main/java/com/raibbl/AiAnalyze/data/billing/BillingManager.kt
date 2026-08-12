@@ -30,7 +30,14 @@ class BillingManager(private val context: Context) : PurchasesUpdatedListener {
     private fun buildClient(): BillingClient {
         return BillingClient.newBuilder(context)
             .setListener(this)
-            .enablePendingPurchases()
+            // PendingPurchasesParams requires at least one product type to be
+            // enabled; one-time products must be enabled even though this app
+            // currently only sells a subscription.
+            .enablePendingPurchases(
+                PendingPurchasesParams.newBuilder()
+                    .enableOneTimeProducts()
+                    .build()
+            )
             .build()
     }
 
@@ -103,13 +110,13 @@ class BillingManager(private val context: Context) : PurchasesUpdatedListener {
             .setProductList(productList)
             .build()
 
-        billingClient.queryProductDetailsAsync(params) { billingResult, productDetailsList ->
+        billingClient.queryProductDetailsAsync(params) { billingResult, queryProductDetailsResult ->
             if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
                 Log.e(TAG, "Failed to query product details: ${billingResult.debugMessage}")
                 return@queryProductDetailsAsync
             }
 
-            val productDetails = productDetailsList.firstOrNull() ?: run {
+            val productDetails = queryProductDetailsResult.productDetailsList.firstOrNull() ?: run {
                 Log.e(TAG, "Product $PRODUCT_ID not found")
                 return@queryProductDetailsAsync
             }
